@@ -73,7 +73,7 @@ Configuration lives in **`src/config.ts`**.
 | Setting | Description |
 |--------|-------------|
 | **`CURRENT_ENVIRONMENT`** | `'production'` or `'uat'`. Chooses which API base URL is used. |
-| **`API_BASE_URLS`** | `uat`: `http://localhost:8000`, `production`: `http://44.197.122.197:8000`. |
+| **`API_BASE_URLS`** | `uat`: `http://localhost:8000`. `production`: from `VITE_API_BASE_URL` (or fallback in config). Production URL must be **HTTPS** when the frontend is on HTTPS (e.g. Vercel). |
 | **`USE_MOCK_DATA`** | `true` = use inline mock schedule data; `false` = call the real backend. |
 | **`API_SECRET`** | From `VITE_API_SECRET` in `.env`, or fallback to `DEFAULT_API_SECRET` in config. Sent as `Authorization: Bearer <value>` on all API requests. |
 
@@ -82,6 +82,30 @@ To point at your local backend:
 1. Set `CURRENT_ENVIRONMENT` to `'uat'` in `src/config.ts`.
 2. Set `USE_MOCK_DATA` to `false`.
 3. Ensure `VITE_API_SECRET` in `.env` matches your backend’s expected secret (or rely on the default in config).
+
+---
+
+## Deploying to Vercel (production)
+
+If the app is served over **HTTPS** (e.g. Vercel), the browser will **block** requests to an **HTTP** backend. That appears in DevTools as **"blocked:mixed-content"**: a secure page cannot load insecure resources.
+
+**What to do:**
+
+1. **Serve the backend over HTTPS**  
+   Your API (e.g. on EC2) must be reachable via `https://...`, not `http://...`. Use a domain and SSL (e.g. nginx + Let's Encrypt, or an Application Load Balancer with an ACM certificate).
+
+2. **Set the production API URL in Vercel**  
+   In the Vercel project → **Settings** → **Environment Variables**, add:
+   - **`VITE_API_BASE_URL`** = your backend base URL, e.g. `https://api.yourdomain.com` (no trailing slash).  
+   Redeploy so the build picks up this value.
+
+3. **Allow the Vercel origin in the backend**  
+   On the backend (e.g. EC2), set **`CORS_ORIGINS`** to include your frontend origin, e.g. `https://your-app.vercel.app`. If the backend uses a comma-separated list, add that URL to the list. Then restart the backend.
+
+| Env variable (Vercel) | Description |
+|------------------------|-------------|
+| **`VITE_API_BASE_URL`** | Production API base URL; **must be HTTPS** when the frontend is on Vercel. |
+| **`VITE_API_SECRET`** | Same as local; must match the backend's expected Bearer secret. |
 
 ---
 

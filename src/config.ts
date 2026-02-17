@@ -11,10 +11,17 @@ export type Environment = 'production' | 'uat';
 /** Current active environment. Change this to switch the API base URL for all endpoints. */
 export const CURRENT_ENVIRONMENT: Environment = 'production';
 
-/** API base URLs per environment. Used by all API calls (e.g. schedule view). */
+/**
+ * API base URLs per environment.
+ * Production: use VITE_API_BASE_URL in .env / Vercel so the backend is HTTPS (required when frontend is on HTTPS to avoid mixed-content blocking).
+ */
+const _productionBaseUrl =
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
+  'http://44.197.122.197:8000';
+
 export const API_BASE_URLS: Record<Environment, string> = {
   uat: 'http://localhost:8000',
-  production: 'http://44.197.122.197:8000', // Production URL to be added later
+  production: _productionBaseUrl,
 };
 
 /** Use mock data instead of real API calls when true. Set to false for real backend. */
