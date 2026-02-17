@@ -1,0 +1,259 @@
+{
+  "purpose": "Comprehensive design system for ShowGroundsLive. Use this file when building new features: apply the exact Tailwind classes and tokens below. Do not invent colors, spacing, or typography.",
+  "meta": {
+    "name": "ShowGroundsLive Design System",
+    "styleSummary": "Modern Organic Professional — clean lines, ample whitespace, serif + sans-serif typography, forest greens and warm accent browns.",
+    "stack": "React, TypeScript, Tailwind CSS v3, Vite"
+  },
+
+  "designGuidelines": {
+    "structure": {
+      "layout": "Fluid two-column grid (lg:grid-cols-2 or lg:grid-cols-3) for main content; single column on small screens. Use max-w-6xl mx-auto for page container.",
+      "container": "Generous outer padding: py-8 px-4 sm:px-6 lg:px-8. Content framed, not edge-to-edge.",
+      "sections": "Separate content into distinct cards or blocks. Use gap-card-gap-y (1.5rem) and gap-card-gap-x (1.25rem) between cards."
+    },
+    "hierarchy": {
+      "principle": "Primary title (serif, green) → section/card titles (sans-serif bold) → body (sans-serif regular) → labels (small, warm or secondary).",
+      "zones": "Header (breadcrumb + title + subtitle) at top; main content in cards; optional footer cards full-width or two-column."
+    },
+    "alignment": "Left-align text in cards and sections. Use flex/grid for consistent vertical alignment of adjacent cards.",
+    "spacing": "Use 8px multiples. Card internal padding: p-card-padding (1.5rem). Gap between icon and text: gap-3 or gap-4. List items: space-y-3, space-y-4, or space-y-5.",
+    "principles": [
+      "Clarity — each section has one clear purpose.",
+      "Consistency — reuse the same Tailwind tokens and component patterns.",
+      "Readability — font-body, leading-relaxed for body text, comfortable line height.",
+      "Balance — pair heavier blocks (e.g. accent-green) with lighter cards.",
+      "Accessibility — semantic HTML, aria-labels where needed, WCAG 2.1 AA contrast."
+    ]
+  },
+
+  "tokens": {
+    "colors": {
+      "background": {
+        "primary": "#F7F7F7",
+        "primary-alt": "#F8F5EE",
+        "tailwind": "bg-background-primary | bg-background-primary-alt"
+      },
+      "surface": {
+        "card": "#FFFFFF",
+        "card-alt": "#FBFBFB",
+        "tailwind": "bg-surface-card | bg-surface-card-alt"
+      },
+      "accent": {
+        "green": "#4F6D4F",
+        "green-alt": "#596B5A",
+        "green-dark": "#5C7B5C",
+        "tailwind": "bg-accent-green | bg-accent-green-alt | text-accent-green-dark"
+      },
+      "text": {
+        "primary": "#333333",
+        "primary-alt": "#4A5A4A",
+        "secondary": "#6B6B6B",
+        "onDark": "#FFFFFF",
+        "tailwind": "text-text-primary | text-text-primary-alt | text-text-secondary | text-text-on-dark"
+      },
+      "warm": {
+        "orange-brown": "#B18A5D",
+        "orange-brown-alt": "#CC8A48",
+        "rust": "#AD6D3F",
+        "tailwind": "text-warm-orange-brown | bg-warm-orange-brown | bg-warm-orange-brown-alt | text-warm-rust"
+      },
+      "semantic": {
+        "warning-bg": "#F4E8D7",
+        "tailwind": "bg-semantic-warning-bg"
+      },
+      "border": {
+        "card": "#E8E8E8",
+        "card-accent": "#E0E6E0",
+        "tailwind": "border-border-card | border-border-card-accent"
+      },
+      "icon-gold": "#CBB490",
+      "tailwindIconGold": "bg-icon-gold"
+    },
+    "typography": {
+      "fontFamily": {
+        "heading": "Lora, Georgia, serif",
+        "body": "Inter, Open Sans, sans-serif",
+        "tailwind": "font-heading | font-body"
+      },
+      "sizes": {
+        "h1": "text-3xl md:text-4xl font-bold (use with font-heading)",
+        "h2": "text-xl font-bold (use with font-body)",
+        "body": "text-base (use with font-body)",
+        "small": "text-sm (use with font-body)",
+        "xs": "text-xs (use with font-body)"
+      }
+    },
+    "spacing": {
+      "cardPadding": "1.5rem",
+      "cardGapY": "1.5rem",
+      "cardGapX": "1.25rem",
+      "tailwind": "p-card-padding | gap-card-gap-y | gap-card-gap-x"
+    },
+    "radius": {
+      "card": "0.75rem",
+      "cardLg": "1rem",
+      "icon": "9999px (full circle)",
+      "tailwind": "rounded-card | rounded-card-lg | rounded-icon | rounded-md"
+    },
+    "shadow": {
+      "card": "0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.04)",
+      "tailwind": "shadow-card"
+    }
+  },
+
+  "components": {
+    "PageLayout": {
+      "description": "Outer page wrapper.",
+      "tailwind": "min-h-screen bg-background-primary py-8 px-4 sm:px-6 lg:px-8",
+      "container": "max-w-6xl mx-auto"
+    },
+    "Header": {
+      "description": "Page header: breadcrumb, main title (serif), optional subtitle.",
+      "props": ["breadcrumb: string", "title: string", "subtitle?: string"],
+      "tailwind": {
+        "wrapper": "mb-8",
+        "breadcrumb": "font-body text-sm font-medium text-warm-orange-brown mb-2",
+        "title": "font-heading text-3xl md:text-4xl font-bold text-accent-green-dark",
+        "subtitle": "font-body text-base text-text-secondary mt-2 leading-relaxed max-w-2xl"
+      }
+    },
+    "InformationCard": {
+      "description": "White card with optional left border, green circle icon, title, body.",
+      "props": ["icon: ReactNode", "title: string", "body: string", "showLeftBorder?: boolean"],
+      "tailwind": {
+        "article": "bg-surface-card rounded-card p-card-padding shadow-card flex gap-4",
+        "articleWithBorder": "border-l-4 border-border-card-accent pl-5",
+        "iconWrapper": "flex-shrink-0 w-12 h-12 rounded-icon bg-accent-green flex items-center justify-center text-text-on-dark",
+        "title": "font-body font-bold text-lg text-text-primary mb-2",
+        "body": "font-body text-text-primary text-base leading-relaxed"
+      }
+    },
+    "KeyBenefitsBlock": {
+      "description": "Dark green block, white text, orange-brown checkmark list.",
+      "props": ["title: string", "items: string[]"],
+      "tailwind": {
+        "section": "bg-accent-green rounded-card-lg p-card-padding text-text-on-dark",
+        "title": "font-body font-bold text-xl mb-6",
+        "list": "space-y-4",
+        "listItem": "flex items-center gap-3",
+        "checkIconWrapper": "flex-shrink-0 w-8 h-8 rounded-icon bg-warm-orange-brown-alt flex items-center justify-center",
+        "checkIcon": "w-4 h-4 text-white",
+        "itemText": "font-body text-base"
+      }
+    },
+    "VisionCard": {
+      "description": "Small white card, warm accent icon (no left border), title, body.",
+      "props": ["icon: ReactNode", "title: string", "body: string"],
+      "tailwind": {
+        "article": "bg-surface-card rounded-card p-card-padding shadow-card",
+        "iconWrapper": "flex items-center gap-2 mb-3 text-warm-rust",
+        "title": "font-body font-bold text-lg text-text-primary mb-2",
+        "body": "font-body text-text-primary text-base leading-relaxed"
+      }
+    },
+    "CoreCapabilitiesCard": {
+      "description": "Tall card with list of items: green circle icon, title, description per row.",
+      "props": ["title: string", "items: { icon, title, description }[]"],
+      "tailwind": {
+        "section": "bg-surface-card rounded-card p-card-padding shadow-card h-full flex flex-col",
+        "title": "font-body font-bold text-xl text-text-primary mb-6",
+        "list": "space-y-5 flex-1",
+        "listItem": "flex gap-3",
+        "iconWrapper": "flex-shrink-0 w-10 h-10 rounded-icon bg-accent-green flex items-center justify-center text-text-on-dark",
+        "itemTitle": "font-body font-bold text-text-primary mb-0.5",
+        "itemDescription": "font-body text-text-secondary text-sm leading-relaxed"
+      }
+    },
+    "DataExtractedCard": {
+      "description": "Card listing data items with gold circle icons.",
+      "props": ["title: string", "items: { icon, label }[]"],
+      "tailwind": {
+        "section": "bg-surface-card rounded-card p-card-padding shadow-card",
+        "title": "font-body font-bold text-xl text-text-primary mb-4",
+        "list": "space-y-3",
+        "listItem": "flex items-center gap-3",
+        "iconWrapper": "flex-shrink-0 w-9 h-9 rounded-icon bg-icon-gold flex items-center justify-center text-text-on-dark",
+        "label": "font-body text-text-primary text-sm"
+      }
+    },
+    "WarningInfoCard": {
+      "description": "Info/warning card: warm tan background, accent icon, title, message.",
+      "props": ["icon: ReactNode", "title: string", "message: string"],
+      "tailwind": {
+        "aside": "bg-semantic-warning-bg rounded-card p-card-padding border border-warm-orange-brown/30",
+        "content": "flex gap-3",
+        "iconWrapper": "flex-shrink-0 text-warm-rust mt-0.5",
+        "title": "font-body font-bold text-text-primary-alt mb-1",
+        "message": "font-body text-text-secondary text-sm leading-relaxed"
+      }
+    },
+    "FooterCard": {
+      "description": "Dark green card with white text; icon in semi-transparent white circle.",
+      "props": ["icon: ReactNode", "title: string", "body: string"],
+      "tailwind": {
+        "article": "bg-accent-green rounded-card p-card-padding text-text-on-dark flex gap-4",
+        "iconWrapper": "flex-shrink-0 w-12 h-12 rounded-icon bg-white/20 flex items-center justify-center text-white",
+        "title": "font-body font-bold text-lg mb-1",
+        "body": "font-body text-sm opacity-90 leading-relaxed"
+      }
+    },
+    "Button": {
+      "description": "Primary (green), secondary (warm), or outline. Use for actions.",
+      "props": ["variant?: 'primary' | 'secondary' | 'outline'", "children", "...buttonProps"],
+      "tailwind": {
+        "base": "font-body font-semibold text-sm px-5 py-2.5 rounded-card transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
+        "primary": "bg-accent-green text-text-on-dark hover:bg-accent-green-alt focus:ring-accent-green",
+        "secondary": "bg-warm-orange-brown text-white hover:bg-warm-orange-brown-alt focus:ring-warm-rust",
+        "outline": "border-2 border-accent-green text-accent-green-dark hover:bg-accent-green hover:text-text-on-dark focus:ring-accent-green"
+      }
+    },
+    "Input": {
+      "description": "Text input with optional label and error. Use for forms.",
+      "props": ["label?: string", "error?: string", "id?", "...inputProps"],
+      "tailwind": {
+        "label": "block font-body text-sm font-medium text-text-primary mb-1.5",
+        "input": "w-full font-body text-text-primary border border-border-card rounded-card px-4 py-2.5 placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-1 disabled:bg-surface-card-alt disabled:cursor-not-allowed",
+        "error": "font-body text-sm text-warm-rust mt-1.5"
+      }
+    },
+    "Badge": {
+      "description": "Small label/tag. Variants: default, warm, green.",
+      "props": ["variant?: 'default' | 'warm' | 'green'", "children", "className?"],
+      "tailwind": {
+        "base": "inline-flex font-body text-xs font-medium px-2.5 py-1 rounded-md",
+        "default": "bg-border-card text-text-secondary",
+        "warm": "bg-warm-orange-brown/15 text-warm-rust",
+        "green": "bg-accent-green/15 text-accent-green-dark"
+      }
+    }
+  },
+
+  "icons": {
+    "rule": "Icons on colored circles: white icon (text-text-on-dark or text-white). Standalone on light card: use text-warm-rust or text-warm-orange-brown.",
+    "sizes": "Container: w-8 h-8 (small), w-9 h-9, w-10 h-10, w-12 h-12 (large). Icon SVG: w-4 h-4 or w-5 h-5 or w-6 h-6 to match.",
+    "circles": "rounded-icon (full circle). Green: bg-accent-green. Warm check: bg-warm-orange-brown-alt. Gold: bg-icon-gold. Footer: bg-white/20."
+  },
+
+  "layoutPatterns": {
+    "twoColumn": "grid grid-cols-1 lg:grid-cols-2 gap-card-gap-x gap-card-gap-y",
+    "twoColWideLeft": "grid grid-cols-1 lg:grid-cols-3 gap-card-gap-x gap-card-gap-y with lg:col-span-2 on left column",
+    "sectionTitle": "font-body font-bold text-xl text-text-primary mb-4 (for standalone section headings above a group of components)"
+  },
+
+  "accessibility": {
+    "semanticHtml": "Use header, main, section, article, aside, nav. Card titles: associate with content via aria-labelledby / id.",
+    "focus": "Interactive elements: focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-1 or focus:ring-offset-2.",
+    "labels": "Form inputs: always pair with label (use Input component). Use aria-invalid and aria-describedby for errors.",
+    "contrast": "Use text-text-primary on light backgrounds; text-text-on-dark on accent-green. Avoid low-contrast combinations."
+  },
+
+  "aiInstructions": [
+    "When adding a new page: wrap in PageLayout classes; use Header for breadcrumb + title + subtitle; use max-w-6xl mx-auto for content.",
+    "When adding a new card or block: reuse an existing component from src/components if it fits; otherwise apply the exact tailwind from this file for that component type.",
+    "Never introduce new colors or font families. Use only tokens from this file (Tailwind theme is in tailwind.config.js).",
+    "Use design tokens (e.g. bg-accent-green, text-text-primary) not raw hex in class names.",
+    "Keep spacing consistent: p-card-padding for card insides, gap-3 or gap-4 for icon+text, space-y-4 for lists.",
+    "Section spacing: mb-8 after header; gap-card-gap-y between card groups."
+  ]
+}

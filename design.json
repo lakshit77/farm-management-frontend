@@ -1,0 +1,183 @@
+{
+  "meta": {
+    "name": "ShowGroundsLive Design System",
+    "description": "Earthy, organic, professional design for horse farm management. Modern clarity with natural tones. Use this file to instruct AI and developers to replicate the look and feel consistently.",
+    "styleSummary": "Modern Organic Professional — clean lines, ample whitespace, serif + sans-serif typography, forest greens and warm accent browns."
+  },
+
+  "structure": {
+    "layout": {
+      "primary": "Fluid two-column grid for main content; single column on small screens.",
+      "container": "Fixed-width centered container with generous outer margins. Content framed, not edge-to-edge.",
+      "sections": "Clear visual separation into distinct blocks or cards. No dense walls of text."
+    },
+    "hierarchy": {
+      "principle": "Use font size, weight, and color contrast to guide the eye: primary title → section headings → body → labels.",
+      "zones": "Header (breadcrumb + title + subtitle), main content (cards in columns), optional footer (full-width cards)."
+    },
+    "alignment": {
+      "text": "Left-aligned within cards and sections.",
+      "columns": "Vertical alignment consistent among cards in the same column."
+    }
+  },
+
+  "spacing": {
+    "baseUnit": "8",
+    "unitDescription": "Prefer multiples of 8px (e.g. 8, 16, 24, 32, 40, 48) for margins and padding.",
+    "outerMargins": "Generous whitespace around the main content area; avoid cramped edges.",
+    "betweenCards": {
+      "vertical": "Generous (e.g. 24–32px) so cards read as distinct blocks.",
+      "horizontal": "Consistent but slightly less than vertical when cards sit side-by-side."
+    },
+    "insideCards": "Uniform padding (e.g. 20–24px) so text and icons have breathing room.",
+    "iconToText": "Small, consistent gap between icon and label/description.",
+    "lineHeight": "Body text: comfortable line height (e.g. 1.5–1.6) for readability."
+  },
+
+  "fonts": {
+    "families": {
+      "heading": "Serif — strong, slightly decorative (e.g. Georgia, Lora, Playfair Display). Use for main page/section titles.",
+      "body": "Sans-serif — clean, neutral, highly legible (e.g. Inter, Open Sans, Lato). Use for UI, body, labels, list items."
+    },
+    "philosophy": "Timeless elegance (serif heading) + modern clarity (sans-serif body). Professional and approachable.",
+    "weights": {
+      "bold": "Primary titles, card titles, list item titles.",
+      "regular": "Subtitles, descriptions, body text, labels."
+    },
+    "sizes": {
+      "h1": "Extra large — main page title (serif).",
+      "h2": "Large — section/card headings (sans-serif, bold).",
+      "body": "Medium — feature descriptions, data labels, paragraphs.",
+      "small": "Subtitle, contextual text, breadcrumb-style labels (e.g. '01 / Project Foundation')."
+    },
+    "casing": "Natural casing preferred; minimal use of uppercase."
+  },
+
+  "colors": {
+    "palette": {
+      "background": {
+        "primary": "#F7F7F7",
+        "primaryAlt": "#F8F5EE",
+        "description": "Very light off-white / warm beige canvas."
+      },
+      "surface": {
+        "card": "#FFFFFF",
+        "cardAlt": "#FBFBFB",
+        "description": "White or crisp off-white for content cards."
+      },
+      "accent": {
+        "green": "#4F6D4F",
+        "greenAlt": "#596B5A",
+        "greenDark": "#5C7B5C",
+        "description": "Deep olive / forest green for primary brand, key sections, icon circles."
+      },
+      "text": {
+        "primary": "#333333",
+        "primaryAlt": "#4A5A4A",
+        "secondary": "#6B6B6B",
+        "secondaryAlt": "#4F4F4F",
+        "onDark": "#FFFFFF",
+        "description": "Dark grey / forest tones on light; white on dark green."
+      },
+      "accentWarm": {
+        "orangeBrown": "#B18A5D",
+        "orangeBrownAlt": "#CC8A48",
+        "rust": "#AD6D3F",
+        "description": "Muted orange-brown for labels, checkmarks, vision icon, contextual cues."
+      },
+      "semantic": {
+        "warningBg": "#F4E8D7",
+        "warningIcon": "Use accentWarm.orangeBrown or rust.",
+        "description": "Soft warm brown/gold for info or warning cards."
+      },
+      "borders": {
+        "card": "Very light grey or desaturated light green (e.g. #E8E8E8 or #E0E6E0).",
+        "cardAccent": "Thin left border on some cards (same tone)."
+      }
+    },
+    "usage": {
+      "heading": "Primary title: muted green (greenDark). Section titles on light: dark grey/black. Section titles on green: white.",
+      "icons": "On circles: green fill, white icon. Accent icons (checkmark, vision): orange-brown circle, white icon. Standalone on light card: orange-brown."
+    }
+  },
+
+  "designStyle": {
+    "overall": "Modern Organic Professional",
+    "traits": [
+      "Clean and minimalist — focus on essential information.",
+      "Soft modernism — rounded corners on cards and icon containers.",
+      "Consistent iconography — solid-fill, simple, recognizable; often in circles.",
+      "Subtle depth — very light shadow on cards if needed; layered but not heavy.",
+      "Earthy palette — greens and warm neutrals; trustworthy and grounded.",
+      "Approachable — rounded corners and natural tones reduce rigidity."
+    ]
+  },
+
+  "designPrinciples": [
+    "Clarity — information straightforward and easy to digest; each section has a clear purpose.",
+    "Hierarchy — size, weight, and color guide users from most to least important.",
+    "Consistency — same card style, spacing, typography, and color usage across similar components.",
+    "Readability — comfortable fonts, line height, and contrast.",
+    "Balance — layout equilibrium (e.g. heavier green section balancing lighter cards).",
+    "Trustworthiness — clean, organized, professional to inspire confidence.",
+    "Accessibility — aim for WCAG 2.1 AA contrast where applicable."
+  ],
+
+  "components": {
+    "header": {
+      "breadcrumb": "Small sans-serif, medium weight, muted orange-brown (accentWarm). Example: '01 / Project Foundation', '04 / Functional Requirements'.",
+      "title": "Large serif (H1), deep muted green. Strong visual impact.",
+      "subtitle": "Sans-serif, regular, below title; secondary text color; optional."
+    },
+    "informationCard": {
+      "structure": "Rectangular card, rounded corners, white background.",
+      "border": "Optional: subtle thin left border (or left accent), light grey or light green-grey.",
+      "icon": "Circle with dark muted green fill; icon inside white. Simple, line-based or solid.",
+      "title": "Sans-serif, bold, dark grey/black.",
+      "body": "Sans-serif, regular, dark grey; generous line height."
+    },
+    "keyBenefitsBlock": {
+      "structure": "Large block, noticeably rounded corners (especially top). Dark olive/forest green background.",
+      "title": "Sans-serif, bold, white.",
+      "listItem": "Single line per benefit; leading icon + text.",
+      "listIcon": "Small circle, muted orange-brown fill, white checkmark inside.",
+      "listText": "Sans-serif, regular, white; scannable."
+    },
+    "visionCard": {
+      "structure": "Smaller card, rounded corners, white background; no left border accent.",
+      "icon": "Small icon (e.g. lightbulb) in muted orange-brown, above/left of title.",
+      "title": "Sans-serif, bold, dark grey/black.",
+      "body": "Sans-serif, regular, dark grey."
+    },
+    "coreCapabilitiesCard": {
+      "structure": "Tall card, list of items with icon + title + description.",
+      "title": "Card title: sans-serif, bold.",
+      "itemIcon": "Circle, muted green fill, white icon.",
+      "itemTitle": "Bold for emphasis.",
+      "itemDescription": "Regular body text."
+    },
+    "dataExtractedCard": {
+      "structure": "Card listing data items with icons.",
+      "itemIcon": "Circle, warm brown/gold fill (#CBB490 range), white icon.",
+      "labels": "Sans-serif, regular."
+    },
+    "warningInfoCard": {
+      "structure": "Distinct card for technical complexity or warnings.",
+      "background": "Soft warm brown/gold (#F4E8D7).",
+      "icon": "Accent orange-brown standalone icon.",
+      "text": "Standard body color; clear, concise message."
+    },
+    "footerCard": {
+      "structure": "Full-width or side-by-side cards at bottom (e.g. Database Storage, Implementation Team).",
+      "background": "Deep forest green (accent green).",
+      "text": "White; bold for titles, regular for body."
+    }
+  },
+
+  "implementationNotes": {
+    "tailwind": "Map this design system to Tailwind: extend theme with these colors, font families, spacing, and border-radius. Use semantic class names.",
+    "tokens": "Do not hardcode hex values in components; use design tokens or Tailwind theme derived from this file.",
+    "components": "Build reusable components (Header, InformationCard, KeyBenefitsBlock, VisionCard, etc.) that consume these tokens and follow these specs.",
+    "ai": "When generating or modifying UI, always respect structure, spacing, fonts, colors, and component specs above to replicate the ShowGroundsLive look."
+  }
+}

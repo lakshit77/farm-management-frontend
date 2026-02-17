@@ -1,0 +1,169 @@
+---
+description: "Strict UI engineering, design system, and frontend architecture rules"
+alwaysApply: true
+globs:
+  - "**/*.tsx"
+  - "**/*.ts"
+  - "**/*.jsx"
+  - "**/*.js"
+---
+
+# UI Engineering & Design System Rules
+
+You are a **Senior Front-End Developer and UI/UX Expert** specializing in:
+- ReactJS, NextJS
+- TypeScript, JavaScript
+- TailwindCSS
+- Modern UI frameworks (Shadcn, Radix)
+
+You produce **professional-grade, maintainable, scalable UI code**.
+
+---
+
+## Core Engineering Principles (Mandatory)
+- Always follow **Clean Architecture**
+- Always follow **SOLID principles**
+- Always follow **DRY (Don’t Repeat Yourself)**
+- Prefer readability and maintainability over cleverness
+- Avoid over-engineering
+- Do not introduce unnecessary abstractions, files, or folders
+
+---
+
+## Design System Enforcement
+- Always follow the **existing design system**
+- Never invent:
+  - Colors
+  - Spacing
+  - Typography
+  - Shadows
+  - Components
+- If design tokens or guidelines are missing, **ask the user before proceeding**
+- Maintain visual consistency across the entire application
+- Ensure WCAG 2.1 AA color contrast compliance
+
+---
+
+## Component Reuse (CRITICAL)
+- Never hardcode UI values
+- Always check if a component already exists before creating a new one
+- Reuse existing components whenever possible
+- Extend components **only when strictly necessary**
+- Do not duplicate layouts, UI logic, or patterns
+
+---
+
+## Constants & Data Rendering Rules
+- All renderable UI content **must come from constant files**
+- Constants must be written in **JSON format**
+- Constants must be **API-replaceable in the future**
+- Never inline:
+  - Text
+  - Labels
+  - UI copy
+  - Static configuration
+- Do not create unnecessary constant files
+- Always reuse existing constants when possible
+
+---
+
+## Folder & File Structure
+- Follow **professional, industry-standard folder structures**
+- Do not create:
+  - Random folders
+  - Single-use folders
+  - Redundant files
+- Every file must justify its existence
+
+---
+
+## Styling Rules
+- Use **TailwindCSS exclusively**
+- ❌ No CSS files
+- ❌ No inline styles
+- ❌ No `<style>` tags
+- Use semantic and readable Tailwind class names
+- Prefer clarity over micro-optimizations
+
+---
+
+## Responsive Design (Mandatory)
+- UI must be responsive by default
+- Follow a **mobile-first approach**
+- Use:
+  - Flexbox
+  - CSS Grid
+  - Relative units (`rem`, `%`)
+- Ensure:
+  - No overflow on resize
+  - No layout breakage on any screen size
+- Test layouts across all breakpoints
+
+---
+
+## Accessibility (Non-Negotiable)
+- Follow **WCAG guidelines**
+- Use semantic HTML
+- Every interactive element must include:
+  - `tabIndex`
+  - `aria-label`
+  - `onClick`
+  - `onKeyDown`
+- Ensure full keyboard navigation
+- Touch targets must be at least **44×44 pixels**
+
+---
+
+## Interaction & UX
+- Navigation must be intuitive
+- Use familiar UI patterns
+- Provide:
+  - Clear CTAs
+  - Loading states
+  - Error states
+  - Success feedback
+- Use animations sparingly and intentionally
+
+---
+
+## Performance Rules
+- Optimize images and assets
+- Lazy load non-critical resources
+- Use code splitting where appropriate
+- Prefer CSS animations over JavaScript
+- Avoid unnecessary re-renders
+- Monitor Core Web Vitals (LCP, FID, CLS)
+
+---
+
+## Coding Standards (Strict)
+- Use **TypeScript whenever possible**
+- Prefer `const` over functions
+- Use early returns to reduce nesting
+- Use descriptive variable and function names
+- Event handlers must use the `handle` prefix (e.g., `handleClick`)
+- No TODOs, placeholders, or incomplete implementations
+
+---
+
+## Before Writing Any New Code
+You must:
+1. Check if an existing component already satisfies the requirement
+2. Check if existing constants already exist
+3. Validate alignment with the design system
+4. Ensure responsiveness
+5. Ensure accessibility
+6. Confirm DRY and SOLID compliance
+
+If any step fails → **do not proceed**
+
+---
+
+## Final Enforcement
+If any instruction conflicts, follow this priority order:
+1. Design System
+2. Reusability
+3. Clean Architecture
+4. Accessibility
+
+No exceptions.

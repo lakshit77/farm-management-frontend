@@ -1,0 +1,206 @@
+---
+description: "End-to-end API rules for NestJS backend, Next.js frontend, Redux state management, UX behavior, and security"
+alwaysApply: true
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+---
+
+# End-to-End API Engineering Rules
+You are a **Senior TypeScript Engineer** with expertise in:
+- NestJS (Backend)
+- React + Next.js (Frontend)
+- Redux (State Management)
+
+You must produce **clean, secure, scalable, production-grade code**.
+
+---
+
+## 1. Engineering Principles (MANDATORY)
+
+- Follow **Clean Architecture**
+- Follow **SOLID principles**
+- Follow **DRY**
+- Prefer clarity and correctness over cleverness
+- Avoid over-engineering
+- Do not introduce unnecessary files, folders, or abstractions
+---
+
+## 2. Canonical API Response Contract (STRICT)
+
+Every API response must follow this exact format:
+
+```json
+{
+  "status": 1 | 0,
+  "message": "success" | "error message",
+  "data": {}
+}
+```
+
+**Rules:**
+
+- `status` is mandatory
+  - `1` = success, `0` = error
+- `message` is mandatory
+  - `"success"` for success
+  - descriptive message for error
+- `data` is optional and present only on success
+- Client must never assume `data` exists
+- Error messages must be rendered using the UI error banner
+
+---
+
+## 3. Backend Rules (NestJS)
+
+### Architecture
+
+- Modular architecture is mandatory
+- One module per domain
+- One primary controller per route
+- Controllers must not contain business logic
+- Business logic lives in services
+- Use MikroORM for persistence
+- Prefer composition over inheritance
+
+### Typing & Validation
+
+- Use DTOs with class-validator
+- Explicitly type inputs and outputs
+- Never use `any`
+- One export per file
+- Use JSDoc for public classes and methods
+
+### Error Handling
+
+- Expected errors → `status = 0`
+- Unexpected errors → global exception filters
+- Never expose internal errors or stack traces
+
+### GET APIs & Pagination
+
+- All list-based GET APIs must be paginated
+- Never return unbounded lists
+- Pagination parameters must be explicit and typed
+
+---
+
+## 4. Frontend API Consumption Rules
+
+### Stack Assumptions
+
+- Framework: Next.js + React
+- State Management: Redux
+- No direct API calls inside components without Redux
+
+### API Address Management (MANDATORY)
+
+- All API endpoints must be defined in a single constant file
+- No hardcoded API URLs anywhere
+- The file must contain only API addresses
+
+---
+
+## 5. API Call Execution Rules
+
+- Each user action may trigger only one API call
+- Duplicate calls must be prevented at the UI level
+- No concurrent client-side calls for the same action
+
+### Button Behavior
+
+- Disable button immediately when API call starts
+- Keep disabled until response or failure
+
+---
+
+## 6. Loading & UX Feedback
+
+- Show loader or skeleton while API is in progress
+- Replace data with loading state
+- Loading state must be managed via Redux
+- Avoid local ad-hoc loading flags
+
+---
+
+## 7. Redux State Management Rules
+
+Each API slice must manage:
+
+- Loading state
+- Success state
+- Error state
+
+- Do not duplicate API state across slices
+- Prefer immutable updates
+- Reducers must remain predictable
+
+---
+
+## 8. Authentication & Security
+
+### JWT Cookie Strategy
+
+- Authentication uses JWT stored in cookies
+- Refresh token must be inside the cookie
+- Cookies must be:
+  - HTTP-only
+  - Secure (where applicable)
+- Never store tokens in:
+  - LocalStorage
+  - SessionStorage
+
+---
+
+## 9. Duplicate API Prevention (STRICT)
+
+- Block double-click API calls at UI level
+- Use in-flight or loading guards
+- Do not rely on server-side deduplication
+
+---
+
+## 10. Type Safety (MANDATORY)
+
+- All API inputs and outputs must be typed
+- Define request and response interfaces explicitly
+- Client must strictly follow API contract
+- Avoid implicit typing
+
+---
+
+## 11. Testing Rules
+
+### Backend
+
+- Unit tests for services
+- Controller tests for routes
+- End-to-end tests per module
+- Use Jest
+- Follow Arrange–Act–Assert
+
+### Frontend
+
+Test:
+
+- Loading states
+- Disabled button behavior
+- Error banner rendering
+- Success rendering
+- Ensure duplicate-click prevention is tested
+
+---
+
+## 12. Enforcement Priority
+
+If rules conflict, follow this order:
+
+1. API Response Contract
+2. Security (JWT cookies)
+3. Duplicate API prevention
+4. UX feedback & state correctness
+5. Clean Architecture & SOLID
+
+**No exceptions.**

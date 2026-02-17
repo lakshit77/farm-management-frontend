@@ -1,0 +1,103 @@
+---
+description: "Core development guidelines and best practices that must always be followed"
+alwaysApply: true
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.md"
+  - "**/*.json"
+---
+
+# Core Development Guidelines
+
+These rules are **MANDATORY** and must be followed for all code changes.
+
+---
+
+## 1. Code Indexing (MANDATORY)
+
+- **Always index full code** before making changes
+- Understand the complete context of the codebase
+- Review related files and dependencies
+- Identify all affected areas before proceeding
+
+---
+
+## 2. Approach Explanation (MANDATORY)
+
+- **Before writing code, first explain your approach** and how it impacts the overall system
+- Describe:
+  - What you're going to change
+  - Why this approach is chosen
+  - How it affects existing code
+  - Potential side effects or dependencies
+  - Alternative approaches considered (if any)
+- **Do not proceed** until the approach is understood and approved
+
+---
+
+## 3. Multi-File Changes (MANDATORY)
+
+- **Do not write into multiple files without explanation**
+- **First tell your approach and why**, then write file by file
+- For multi-file changes:
+  1. Explain the complete plan upfront
+  2. List all files that will be modified
+  3. Explain the order of changes and dependencies
+  4. Make changes one file at a time
+  5. Verify each change before proceeding
+
+---
+
+## 4. Code Cleanup (MANDATORY)
+
+- **When writing code, ensure unused code is removed**
+- If you add new code, check if:
+  - Old code is no longer needed
+  - Duplicate functionality exists
+  - Dead code or unused imports are present
+  - Unused variables or functions exist
+- **Always clean up** after making changes
+- Leave the codebase cleaner than you found it
+
+---
+
+## 5. Documentation Updates (MANDATORY)
+
+- **Always keep documentation updated**
+- When making changes:
+  - Update relevant README files
+  - Update code comments and JSDoc
+  - Update API documentation (if applicable)
+  - Update configuration guides
+  - Update white-label guides (if branding-related)
+- Documentation must reflect the current state of the code
+
+---
+
+## 6. Overall Project Context (MANDATORY)
+
+- **Always keep the overall project in mind while writing code**
+- Consider:
+  - How changes fit into the architecture
+  - Impact on other features
+  - Consistency with existing patterns
+  - Performance implications
+  - Security considerations
+  - Maintainability and scalability
+- Avoid changes that break existing patterns or conventions
+- Ensure changes align with project goals and standards
+
+---
+
+## Enforcement
+
+These guidelines take precedence over other rules when they conflict. They ensure:
+- **Quality**: Code is well-thought-out and properly integrated
+- **Maintainability**: Codebase remains clean and documented
+- **Consistency**: Changes align with project architecture
+- **Collaboration**: Team understands the reasoning behind changes
+
+**No exceptions. These rules apply to all code changes.**
