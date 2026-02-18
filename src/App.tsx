@@ -49,11 +49,24 @@ function orderLabel(entry: ScheduleEntry): string {
   return "—";
 }
 
+/** Return time-only (HH:MM:SS) for display; schedule is already for a single date. */
+function formatTimeOnly(value: string | null | undefined): string {
+  if (value == null || value === "") return "—";
+  const s = value.trim();
+  if (s.includes(" ")) {
+    const part = s.split(" ")[1];
+    return part ?? s;
+  }
+  return s;
+}
+
 /** Derive a simple status for the row: completed, underway, or upcoming. */
-function entryStatusLabel(entry: ScheduleEntry): "completed" | "active" | "upcoming" {
-  const s = (entry.class_status ?? entry.status ?? "").toLowerCase();
-  if (s.includes("completed") || entry.gone_in) return "completed";
-  if (s.includes("underway") || s.includes("in progress")) return "active";
+function entryStatusLabel(entry: ScheduleEntry): "completed" | "active" | "upcoming" | "inactive" {
+  const s = (entry.status ?? "").toLowerCase();
+  if (s === "inactive") return "inactive";
+  const cs = (entry.class_status ?? entry.status ?? "").toLowerCase();
+  if (cs.includes("completed") || entry.gone_in) return "completed";
+  if (cs.includes("underway") || cs.includes("in progress")) return "active";
   return "upcoming";
 }
 
@@ -191,10 +204,14 @@ function EntryExpandable({
             <span className="text-text-primary">{entry.class_status}</span>
           )}
           {entry.estimated_start != null && (
-            <span className="text-text-secondary">Est. {entry.estimated_start}</span>
+            <span className="text-text-secondary">
+              Est. {formatTimeOnly(entry.estimated_start)}
+            </span>
           )}
-          {entry.actual_start != null && entry.actual_start !== "00:00:00" && (
-            <span className="text-text-secondary">Actual {entry.actual_start}</span>
+          {entry.actual_start != null && formatTimeOnly(entry.actual_start) !== "00:00:00" && (
+            <span className="text-text-secondary">
+              Actual {formatTimeOnly(entry.actual_start)}
+            </span>
           )}
           {entry.placing != null && entry.placing < 100000 && (
             <span className="font-medium text-accent-green-dark">Placing {entry.placing}</span>
@@ -315,6 +332,7 @@ function App(): React.ReactElement {
   const [expandedEntryIds, setExpandedEntryIds] = useState<Set<string>>(
     () => new Set()
   );
+  const [inactiveSectionExpanded, setInactiveSectionExpanded] = useState<boolean>(false);
 
   const [filterHorse, setFilterHorse] = useState<string>("");
   const [filterRider, setFilterRider] = useState<string>("");
@@ -610,9 +628,9 @@ function App(): React.ReactElement {
                             const horseName = entry.horse?.name ?? "";
                             const riderName = entry.rider?.name ?? "";
                             const timeStr =
-                              entry.estimated_start ||
-                              entry.actual_start ||
-                              "—";
+                              formatTimeOnly(
+                                entry.estimated_start || entry.actual_start
+                              );
                             const statusKind = entryStatusLabel(entry);
                             const isEntryExpanded = expandedEntryIds.has(entry.id);
                             return (
@@ -638,14 +656,18 @@ function App(): React.ReactElement {
                                           ? "green"
                                           : statusKind === "active"
                                             ? "warm"
-                                            : "default"
+                                            : statusKind === "inactive"
+                                              ? "default"
+                                              : "default"
                                       }
                                     >
                                       {statusKind === "completed"
                                         ? "Done"
                                         : statusKind === "active"
                                           ? "In progress"
-                                          : "Upcoming"}
+                                          : statusKind === "inactive"
+                                            ? "Inactive"
+                                            : "Upcoming"}
                                     </Badge>
                                   </span>
                                   <span className="w-14 shrink-0 text-right text-text-secondary tabular-nums">
@@ -673,6 +695,60 @@ function App(): React.ReactElement {
               </section>
             ))}
           </div>
+        )}
+
+        {!loading && data && (data.inactive_entries?.length ?? 0) > 0 && (
+          <section className="mt-8 bg-surface-card rounded-card shadow-card overflow-hidden">
+            <div className="border-b border-border-card/80">
+              <button
+                type="button"
+                onClick={() => setInactiveSectionExpanded((prev) => !prev)}
+                className="w-full px-5 py-3 bg-surface-card-alt/50 hover:bg-surface-card-alt text-left font-body text-sm cursor-pointer focus:outline-none flex items-center gap-2"
+              >
+                <span className="shrink-0 text-text-secondary" aria-hidden>
+                  {inactiveSectionExpanded ? (
+                    <ChevronDown className="size-5" />
+                  ) : (
+                    <ChevronRight className="size-5" />
+                  )}
+                </span>
+                <span className="font-heading text-lg font-bold text-accent-green-dark">
+                  Horses not in any class
+                </span>
+                <span className="ml-1.5 text-text-secondary font-normal font-body">
+                  ({data.inactive_entries!.length}{" "}
+                  {data.inactive_entries!.length === 1 ? "horse" : "horses"})
+                </span>
+              </button>
+            </div>
+            {inactiveSectionExpanded && (
+              <>
+                <div className="px-5 py-2 border-b border-border-card/60">
+                  <p className="font-body text-sm text-text-secondary">
+                    These horses are in your entries for this show but are not entered in any class.
+                  </p>
+                </div>
+                <ul className="divide-y divide-border-card/80">
+                  {data.inactive_entries!.map((entry: ScheduleEntry) => (
+                    <li
+                      key={entry.id}
+                      className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-6 px-5 py-3 font-body text-sm"
+                    >
+                      <span className="min-w-0 flex-1 font-medium text-text-primary truncate">
+                        {entry.horse?.name ?? "—"}
+                      </span>
+                      <span className="min-w-0 flex-1 text-text-primary truncate">
+                        {entry.rider?.name ?? "—"}
+                      </span>
+                      <span className="shrink-0">
+                        <Badge variant="default">Inactive</Badge>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
         )}
       </div>
     </div>

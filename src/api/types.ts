@@ -10,12 +10,14 @@ export type ScheduleViewResponse = {
   data: ScheduleViewData;
 };
 
-/** Inner payload: date, show info, and events (rings) with classes and entries. */
+/** Inner payload: date, show info, events (rings) with classes and entries, and inactive entries. */
 export type ScheduleViewData = {
   date: string;
   show_name: string;
   show_id: string;
   events: ScheduleEvent[];
+  /** Entries for horses in "my entries" but not in any class (status: inactive). */
+  inactive_entries?: ScheduleEntry[];
 };
 
 export type ScheduleEvent = {
@@ -38,7 +40,7 @@ export type ScheduleClass = {
 export type ScheduleEntry = {
   id: string;
   horse: { id: string; name: string; status: string };
-  rider: { id: string; name: string };
+  rider: { id: string; name: string } | null;
   back_number: string;
   order_of_go: number | null;
   order_total: number | null;
