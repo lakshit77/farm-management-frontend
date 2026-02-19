@@ -135,9 +135,9 @@ function EntryExpandable({
     scores.length > 0;
 
   return (
-    <div className="px-5 py-4 bg-surface-card-alt/60 border-t border-border-card">
+    <div className="px-4 sm:px-5 py-3 sm:py-4 bg-surface-card-alt/60 border-t border-border-card">
       {/* Who & What */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-3 sm:mb-4">
         <div className="rounded-lg border border-border-card bg-surface-card px-3 py-2.5">
           <p className="text-xs font-medium text-text-secondary uppercase tracking-wide mb-1 flex items-center gap-1.5">
             <BookOpen className="size-3.5" aria-hidden /> Class
@@ -406,7 +406,7 @@ export const ClassesHorsesTab: React.FC<ClassesHorsesTabProps> = ({
     filters.horseName !== "" || filters.className !== "";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 min-w-0">
       {/* No results for active filters */}
       {hasActiveFilters && filteredEvents.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -421,11 +421,11 @@ export const ClassesHorsesTab: React.FC<ClassesHorsesTabProps> = ({
       {filteredEvents.map((event: ScheduleEvent) => (
         <section
           key={event.id}
-          className="bg-surface-card rounded-card shadow-card overflow-hidden"
+          className="bg-surface-card rounded-card shadow-card overflow-hidden min-w-0"
         >
           {/* Event header */}
-          <div className="px-5 py-3 border-b border-border-card">
-            <h2 className="font-heading text-xl font-bold text-accent-green-dark">
+          <div className="px-4 sm:px-5 py-2.5 sm:py-3 border-b border-border-card">
+            <h2 className="font-heading text-lg sm:text-xl font-bold text-accent-green-dark">
               {event.name}
               {event.ring_number != null && (
                 <span className="font-body font-normal text-text-secondary ml-2 text-base">
@@ -447,7 +447,7 @@ export const ClassesHorsesTab: React.FC<ClassesHorsesTabProps> = ({
                 <button
                   type="button"
                   onClick={() => toggleClass(cls.id)}
-                  className="w-full px-5 py-3 bg-surface-card-alt/50 hover:bg-surface-card-alt text-left font-body text-sm border-t border-border-card/60 cursor-pointer focus:outline-none flex items-center gap-2"
+                  className="w-full px-4 sm:px-5 py-3 bg-surface-card-alt/50 hover:bg-surface-card-alt text-left font-body text-sm border-t border-border-card/60 cursor-pointer focus:outline-none flex items-center gap-2 min-h-[48px] touch-manipulation"
                 >
                   <span className="shrink-0 text-text-secondary" aria-hidden>
                     {isClassExpanded ? (
@@ -488,15 +488,15 @@ export const ClassesHorsesTab: React.FC<ClassesHorsesTabProps> = ({
                           <button
                             type="button"
                             onClick={() => toggleEntry(entry.id)}
-                            className="w-full flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-6 px-5 py-3 pl-8 text-left font-body text-sm border-t border-border-card/60 hover:bg-surface-card-alt/50 cursor-pointer focus:outline-none"
+                            className="w-full flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-6 px-4 sm:px-5 py-3 pl-6 sm:pl-8 text-left font-body text-sm border-t border-border-card/60 hover:bg-surface-card-alt/50 cursor-pointer focus:outline-none min-h-[48px] touch-manipulation"
                           >
-                            <span className="w-20 shrink-0 font-medium text-text-primary tabular-nums">
+                            <span className="w-16 sm:w-20 shrink-0 font-medium text-text-primary tabular-nums text-xs sm:text-sm">
                               {timeStr}
                             </span>
-                            <span className="min-w-0 flex-1 font-medium text-text-primary truncate">
+                            <span className="min-w-0 flex-1 font-medium text-text-primary truncate text-sm">
                               {horseName}
                             </span>
-                            <span className="min-w-0 flex-1 text-text-primary truncate">
+                            <span className="min-w-0 flex-1 text-text-primary truncate text-sm">
                               {riderName}
                             </span>
                             <span className="shrink-0">
@@ -555,7 +555,7 @@ export const ClassesHorsesTab: React.FC<ClassesHorsesTabProps> = ({
               onClick={() =>
                 setInactiveSectionExpanded((prev) => !prev)
               }
-              className="w-full px-5 py-3 bg-surface-card-alt/50 hover:bg-surface-card-alt text-left font-body text-sm cursor-pointer focus:outline-none flex items-center gap-2"
+              className="w-full px-4 sm:px-5 py-3 bg-surface-card-alt/50 hover:bg-surface-card-alt text-left font-body text-sm cursor-pointer focus:outline-none flex items-center gap-2 min-h-[48px] touch-manipulation"
             >
               <span className="shrink-0 text-text-secondary" aria-hidden>
                 {inactiveSectionExpanded ? (
@@ -585,7 +585,7 @@ export const ClassesHorsesTab: React.FC<ClassesHorsesTabProps> = ({
                 {data.inactive_entries!.map((entry: ScheduleEntry) => (
                   <li
                     key={entry.id}
-                    className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-6 px-5 py-3 font-body text-sm"
+                    className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-6 px-4 sm:px-5 py-3 font-body text-sm min-h-[44px]"
                   >
                     <span className="min-w-0 flex-1 font-medium text-text-primary truncate">
                       {entry.horse?.name ?? "—"}

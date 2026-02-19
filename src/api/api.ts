@@ -319,8 +319,91 @@ export const SCHEDULE_VIEW_API = {
           score6: null,
         },
       ],
+      class_monitoring_last_run: 'Wed, 19 Feb 2026, 10:30 AM EST',
     },
   } satisfies ScheduleViewResponse,
+} as const;
+
+// =============================================================================
+// Daily Schedule API (Flow 1)
+// =============================================================================
+
+/**
+ * Daily Schedule API (Flow 1 - Morning Sync).
+ *
+ * Purpose: Trigger the daily schedule sync. Called by n8n daily (e.g. 7:00 AM).
+ * Runs Flow 1: fetches show schedule, syncs entries to DB.
+ *
+ * Endpoint: GET /api/v1/schedule/daily?date=YYYY-MM-DD
+ *
+ * Query parameters:
+ * - date: Optional. ISO date string (YYYY-MM-DD). Default: today UTC.
+ *
+ * Response:
+ * - status: 1 success, 0 error
+ * - message: string
+ * - data: { summary, ... }
+ */
+export type DailyScheduleParams = {
+  date?: string; // YYYY-MM-DD, optional
+};
+
+export const DAILY_SCHEDULE_API = {
+  url: (params: DailyScheduleParams = {}): string => {
+    const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const search = new URLSearchParams();
+    if (params.date) search.set('date', params.date);
+    const qs = search.toString();
+    return `${base}/api/v1/schedule/daily${qs ? `?${qs}` : ''}`;
+  },
+  method: 'GET' as const,
+  useMockData: USE_MOCK_DATA,
+  mockResponse: {
+    status: 1 as const,
+    message: 'success',
+    data: { summary: 'Mock daily schedule completed' },
+  },
+} as const;
+
+// =============================================================================
+// Class Monitor API (Flow 2)
+// =============================================================================
+
+/**
+ * Class Monitor API (Flow 2 - Class Monitoring).
+ *
+ * Purpose: Trigger class monitoring. Called by n8n every 10 minutes.
+ * Runs Flow 2: fetches active classes, detects changes, updates DB.
+ *
+ * Endpoint: GET /api/v1/schedule/class-monitor?date=YYYY-MM-DD
+ *
+ * Query parameters:
+ * - date: Optional. ISO date string (YYYY-MM-DD). Default: today UTC.
+ *
+ * Response:
+ * - status: 1 success, 0 error
+ * - message: string
+ * - data: { summary, changes, alerts, ... }
+ */
+export type ClassMonitorParams = {
+  date?: string; // YYYY-MM-DD, optional
+};
+
+export const CLASS_MONITOR_API = {
+  url: (params: ClassMonitorParams = {}): string => {
+    const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const search = new URLSearchParams();
+    if (params.date) search.set('date', params.date);
+    const qs = search.toString();
+    return `${base}/api/v1/schedule/class-monitor${qs ? `?${qs}` : ''}`;
+  },
+  method: 'GET' as const,
+  useMockData: USE_MOCK_DATA,
+  mockResponse: {
+    status: 1 as const,
+    message: 'success',
+    data: { summary: 'Mock class monitoring completed' },
+  },
 } as const;
 
 // =============================================================================

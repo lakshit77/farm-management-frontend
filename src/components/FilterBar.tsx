@@ -49,12 +49,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   const selectClass =
-    "h-9 w-36 font-body text-sm text-text-primary border border-border-card rounded-lg pl-8 pr-7 bg-background-primary focus:outline-none focus:ring-2 focus:ring-accent-green focus:border-transparent appearance-none cursor-pointer truncate";
+    "h-10 sm:h-9 w-full sm:w-36 min-w-0 font-body text-sm text-text-primary border border-border-card rounded-lg pl-8 pr-7 bg-background-primary focus:outline-none focus:ring-2 focus:ring-accent-green focus:border-transparent appearance-none cursor-pointer truncate touch-manipulation";
 
   return (
-    <div className="flex items-center gap-2 shrink-0">
+    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto sm:shrink-0">
       {/* Horse dropdown */}
-      <div className="relative shrink-0">
+      <div className="relative flex-1 sm:flex-initial min-w-0 sm:shrink-0">
         <PawPrint className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-text-secondary pointer-events-none" aria-hidden />
         <select
           aria-label="Filter by horse"
@@ -73,7 +73,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       </div>
 
       {/* Class dropdown */}
-      <div className="relative shrink-0">
+      <div className="relative flex-1 sm:flex-initial min-w-0 sm:shrink-0">
         <BookOpen className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-text-secondary pointer-events-none" aria-hidden />
         <select
           aria-label="Filter by class"
@@ -96,7 +96,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         <button
           type="button"
           onClick={clearAll}
-          className="h-9 shrink-0 inline-flex items-center gap-1 px-2.5 font-body text-xs font-medium text-accent-green-dark hover:bg-accent-green/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green transition-colors"
+          className="h-10 sm:h-9 shrink-0 inline-flex items-center gap-1 px-2.5 font-body text-xs font-medium text-accent-green-dark hover:bg-accent-green/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green transition-colors touch-manipulation min-h-[44px] sm:min-h-0"
         >
           <X className="size-3.5" aria-hidden />
           <span>Clear</span>

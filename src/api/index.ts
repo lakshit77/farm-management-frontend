@@ -8,6 +8,8 @@ export {
   USE_MOCK_DATA,
   getApiHeaders,
   SCHEDULE_VIEW_API,
+  DAILY_SCHEDULE_API,
+  CLASS_MONITOR_API,
   NOTIFICATIONS_API,
   type Environment,
   type ScheduleViewResponse,

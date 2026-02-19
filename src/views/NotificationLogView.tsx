@@ -1,20 +1,6 @@
-import React, { useState, useCallback, useEffect, useContext } from "react";
-import {
-  RefreshCw,
-  Loader2,
-  Filter,
-  X,
-  Trophy,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  Flag,
-  XCircle,
-  BarChart3,
-  ListChecks,
-  Calendar,
-} from "lucide-react";
-import { Button, Badge } from "../components";
+import React, { useState, useCallback, useEffect, useContext, useMemo } from "react";
+import { RefreshCw, Loader2, Filter, X, AlertCircle, Calendar } from "lucide-react";
+import { Button } from "../components";
 import { HeaderLabelContext } from "../contexts/HeaderLabelContext";
 import {
   NOTIFICATIONS_API,
@@ -22,45 +8,14 @@ import {
   type NotificationLogItem,
   type NotificationLogParams,
 } from "../api";
+import {
+  getNotificationDisplayConfig,
+  getCategoryOrder,
+  CATEGORY_LABELS,
+  type NotificationCategory,
+} from "../utils/notificationConfig";
 
 const PAGE_SIZE = 50;
-
-/** Notification type display config: label, icon, badge variant. */
-const NOTIFICATION_TYPE_CONFIG: Record<
-  string,
-  { label: string; icon: React.ReactNode; badgeClass: string }
-> = {
-  RESULT: {
-    label: "Result",
-    icon: <Trophy className="size-4" aria-hidden />,
-    badgeClass: "bg-amber-100 text-amber-800",
-  },
-  TIME_CHANGE: {
-    label: "Time change",
-    icon: <Clock className="size-4" aria-hidden />,
-    badgeClass: "bg-orange-100 text-orange-800",
-  },
-  STATUS_CHANGE: {
-    label: "Class status",
-    icon: <Flag className="size-4" aria-hidden />,
-    badgeClass: "bg-green-100 text-accent-green-dark",
-  },
-  PROGRESS_UPDATE: {
-    label: "Progress",
-    icon: <BarChart3 className="size-4" aria-hidden />,
-    badgeClass: "bg-green-100 text-accent-green-dark",
-  },
-  HORSE_COMPLETED: {
-    label: "Horse completed",
-    icon: <CheckCircle2 className="size-4" aria-hidden />,
-    badgeClass: "bg-green-100 text-accent-green-dark",
-  },
-  SCRATCHED: {
-    label: "Scratched",
-    icon: <XCircle className="size-4" aria-hidden />,
-    badgeClass: "bg-red-100 text-red-800",
-  },
-};
 
 const SOURCE_OPTIONS = [
   { value: "", label: "All sources" },
@@ -70,10 +25,12 @@ const SOURCE_OPTIONS = [
 
 const TYPE_OPTIONS = [
   { value: "", label: "All types" },
-  ...Object.entries(NOTIFICATION_TYPE_CONFIG).map(([value, { label }]) => ({
-    value,
-    label,
-  })),
+  { value: "STATUS_CHANGE", label: "Class status" },
+  { value: "TIME_CHANGE", label: "Time change" },
+  { value: "PROGRESS_UPDATE", label: "Progress update" },
+  { value: "RESULT", label: "Result" },
+  { value: "HORSE_COMPLETED", label: "Horse completed / Availability" },
+  { value: "SCRATCHED", label: "Scratched" },
 ];
 
 /** Format ISO datetime to time-only (e.g. 10:47 AM) for display. */
@@ -228,12 +185,24 @@ export function NotificationLogView(): React.ReactElement {
     setNotificationType("");
   };
 
-  const typeConfig = (type: string) =>
-    NOTIFICATION_TYPE_CONFIG[type] ?? {
-      label: type,
-      icon: <ListChecks className="size-4" aria-hidden />,
-      badgeClass: "bg-gray-100 text-text-secondary",
-    };
+  const grouped = useMemo(() => {
+    const byCategory = new Map<NotificationCategory, NotificationLogItem[]>();
+    for (const item of notifications) {
+      const config = getNotificationDisplayConfig(item);
+      const list = byCategory.get(config.category) ?? [];
+      list.push(item);
+      byCategory.set(config.category, list);
+    }
+    return byCategory;
+  }, [notifications]);
+
+  const categoryOrder = useMemo(
+    () =>
+      [...grouped.keys()].sort(
+        (a, b) => getCategoryOrder(a) - getCategoryOrder(b)
+      ),
+    [grouped]
+  );
 
   return (
     <div className="py-8 px-4 sm:px-6 lg:px-8">
@@ -338,50 +307,66 @@ export function NotificationLogView(): React.ReactElement {
                 <p className="font-body text-text-secondary">No notifications for this date.</p>
               </div>
             ) : (
-              <ul className="divide-y divide-border-card" aria-label="Notification list">
-                {notifications.map((item) => {
-                  const config = typeConfig(item.notification_type);
+              <div className="divide-y divide-border-card">
+                {categoryOrder.map((category) => {
+                  const items = grouped.get(category) ?? [];
+                  if (items.length === 0) return null;
+                  const label = CATEGORY_LABELS[category];
                   return (
-                    <li key={item.id} className="p-4 sm:p-5 hover:bg-surface-card-alt/50 transition-colors">
-                      <div className="flex gap-3 sm:gap-4">
-                        <div
-                          className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${config.badgeClass}`}
-                          aria-hidden
-                        >
-                          {config.icon}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                            <Badge variant="default" className={config.badgeClass}>
-                              {config.label}
-                            </Badge>
-                            <span className="font-body text-sm text-text-secondary">
-                              {formatTime(item.created_at)}
-                              <span className="ml-1 text-text-secondary/80">
-                                {formatDate(item.created_at)}
-                              </span>
-                            </span>
-                          </div>
-                          {item.message && (
-                            <p className="font-body text-sm font-medium text-text-primary mb-1">
-                              {item.message}
-                            </p>
-                          )}
-                          {item.payload &&
-                            typeof item.payload === "object" &&
-                            Object.keys(item.payload).length > 0 && (
-                              <p className="font-body text-xs text-text-secondary">
-                                {Object.entries(item.payload)
-                                  .map(([k, v]) => `${k}: ${String(v)}`)
-                                  .join(" • ")}
-                              </p>
-                            )}
-                        </div>
+                    <div key={category} className="first:border-t-0">
+                      <div className="px-4 sm:px-5 py-2 bg-surface-card-alt/50 border-b border-border-card">
+                        <h3 className="font-heading text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                          {label}
+                        </h3>
                       </div>
-                    </li>
+                      <ul aria-label={`${label} notifications`}>
+                        {items.map((item) => {
+                          const config = getNotificationDisplayConfig(item);
+                          return (
+                            <li
+                              key={item.id}
+                              className="p-4 sm:p-5 hover:bg-surface-card-alt/50 transition-colors"
+                            >
+                              <div className="flex gap-3 sm:gap-4">
+                                <div
+                                  className={`shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${config.iconBg} ${config.textColor}`}
+                                  aria-hidden
+                                >
+                                  {config.icon}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                                    <span
+                                      className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${config.iconBg} ${config.textColor}`}
+                                    >
+                                      {config.icon}
+                                      {config.label}
+                                    </span>
+                                    <span className="font-body text-sm text-text-secondary">
+                                      {formatTime(item.created_at)}
+                                      <span className="ml-1 text-text-secondary/80">
+                                        {formatDate(item.created_at)}
+                                      </span>
+                                    </span>
+                                  </div>
+                                  {config.summary && (
+                                    <p
+                                      className="font-body text-sm text-text-primary whitespace-pre-line"
+                                      style={{ lineHeight: 1.5 }}
+                                    >
+                                      {config.summary}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
                   );
                 })}
-              </ul>
+              </div>
             )}
 
             {!loading && notifications.length > 0 && hasMore && (

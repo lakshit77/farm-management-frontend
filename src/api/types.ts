@@ -18,6 +18,8 @@ export type ScheduleViewData = {
   events: ScheduleEvent[];
   /** Entries for horses in "my entries" but not in any class (status: inactive). */
   inactive_entries?: ScheduleEntry[];
+  /** When class monitoring last ran (America/New_York), e.g. "Wed, 19 Feb 2026, 10:30 AM EST". */
+  class_monitoring_last_run?: string | null;
 };
 
 export type ScheduleEvent = {
