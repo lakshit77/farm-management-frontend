@@ -1,4 +1,5 @@
 export { Header } from "./Header";
+export { Sidebar, type SidebarTab, type SidebarProps } from "./Sidebar";
 export { InformationCard } from "./InformationCard";
 export { KeyBenefitsBlock } from "./KeyBenefitsBlock";
 export { VisionCard } from "./VisionCard";
@@ -9,4 +10,5 @@ export { FooterCard } from "./FooterCard";
 export { Button } from "./Button";
 export { Input } from "./Input";
 export { Badge } from "./Badge";
+export { FilterBar, type DashboardFilters } from "./FilterBar";
 export * from "./icons";

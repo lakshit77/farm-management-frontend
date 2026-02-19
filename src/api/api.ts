@@ -19,9 +19,18 @@ import {
   type Environment,
 } from '../config';
 
-import type { ScheduleViewResponse } from './types';
+import type { ScheduleViewResponse, NotificationLogResponse } from './types';
 
-export type { ScheduleViewResponse, ScheduleViewData, ScheduleEvent, ScheduleClass, ScheduleEntry } from './types';
+export type {
+  ScheduleViewResponse,
+  ScheduleViewData,
+  ScheduleEvent,
+  ScheduleClass,
+  ScheduleEntry,
+  NotificationLogResponse,
+  NotificationLogListData,
+  NotificationLogItem,
+} from './types';
 export type { Environment };
 export { CURRENT_ENVIRONMENT, USE_MOCK_DATA };
 
@@ -63,10 +72,25 @@ export function getApiHeaders(additionalHeaders?: HeadersInit): HeadersInit {
  * - message: string
  * - data: { date, show_name, show_id, events[] }
  */
+/** Query params for GET /api/v1/schedule/view. */
+export type ScheduleViewParams = {
+  date: string; // YYYY-MM-DD
+  horse_name?: string;
+  class_name?: string;
+};
+
 export const SCHEDULE_VIEW_API = {
-  url: (date: string): string => {
+  url: (params: ScheduleViewParams | string): string => {
     const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
-    return `${base}/api/v1/schedule/view?date=${encodeURIComponent(date)}`;
+    // Accept legacy string (date-only) or full params object
+    if (typeof params === 'string') {
+      return `${base}/api/v1/schedule/view?date=${encodeURIComponent(params)}`;
+    }
+    const search = new URLSearchParams();
+    search.set('date', params.date);
+    if (params.horse_name) search.set('horse_name', params.horse_name);
+    if (params.class_name) search.set('class_name', params.class_name);
+    return `${base}/api/v1/schedule/view?${search.toString()}`;
   },
   method: 'GET' as const,
   useMockData: USE_MOCK_DATA,
@@ -297,4 +321,83 @@ export const SCHEDULE_VIEW_API = {
       ],
     },
   } satisfies ScheduleViewResponse,
+} as const;
+
+// =============================================================================
+// Notification log API
+// =============================================================================
+
+/** Query params for GET /api/v1/schedule/notifications. */
+export type NotificationLogParams = {
+  limit?: number;
+  offset?: number;
+  source?: string;
+  notification_type?: string;
+  date?: string; // YYYY-MM-DD
+  horse_name?: string;
+  class_name?: string;
+};
+
+/**
+ * Notification log API.
+ *
+ * Endpoint: GET /api/v1/schedule/notifications
+ *
+ * Query parameters: limit, offset, source, notification_type, date.
+ */
+export const NOTIFICATIONS_API = {
+  url: (params: NotificationLogParams = {}): string => {
+    const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const search = new URLSearchParams();
+    if (params.limit != null) search.set('limit', String(params.limit));
+    if (params.offset != null) search.set('offset', String(params.offset));
+    if (params.source != null && params.source !== '') search.set('source', params.source);
+    if (params.notification_type != null && params.notification_type !== '')
+      search.set('notification_type', params.notification_type);
+    if (params.date != null && params.date !== '') search.set('date', params.date);
+    if (params.horse_name != null && params.horse_name !== '') search.set('horse_name', params.horse_name);
+    if (params.class_name != null && params.class_name !== '') search.set('class_name', params.class_name);
+    const qs = search.toString();
+    return `${base}/api/v1/schedule/notifications${qs ? `?${qs}` : ''}`;
+  },
+  method: 'GET' as const,
+  useMockData: USE_MOCK_DATA,
+  mockResponse: {
+    status: 1 as const,
+    message: 'success',
+    data: {
+      notifications: [
+        {
+          id: 'mock-notif-1',
+          farm_id: 'mock-farm-id',
+          source: 'class_monitoring',
+          notification_type: 'RESULT',
+          message: 'OSTWIND 59 placed 1st',
+          payload: { class_name: '$150 Green Hunter', prize: 45 },
+          entry_id: 'mock-entry-1',
+          created_at: new Date(Date.now() - 3600000).toISOString(),
+        },
+        {
+          id: 'mock-notif-2',
+          farm_id: 'mock-farm-id',
+          source: 'class_monitoring',
+          notification_type: 'TIME_CHANGE',
+          message: 'Class 1095 time changed 11:30 AM → 11:50 AM',
+          payload: { ring: 'International' },
+          entry_id: null,
+          created_at: new Date(Date.now() - 7200000).toISOString(),
+        },
+        {
+          id: 'mock-notif-3',
+          farm_id: 'mock-farm-id',
+          source: 'class_monitoring',
+          notification_type: 'STATUS_CHANGE',
+          message: 'Class 2401 started',
+          payload: null,
+          entry_id: 'mock-entry-2',
+          created_at: new Date(Date.now() - 10800000).toISOString(),
+        },
+      ],
+    },
+  } satisfies NotificationLogResponse,
 } as const;

@@ -71,3 +71,31 @@ export type ScheduleEntry = {
   score5: string | null;
   score6: string | null;
 };
+
+// =============================================================================
+// Notification log API
+// =============================================================================
+
+/** Single notification log entry from GET /api/v1/schedule/notifications. */
+export type NotificationLogItem = {
+  id: string;
+  farm_id: string;
+  source: string;
+  notification_type: string;
+  message: string | null;
+  payload: Record<string, unknown> | null;
+  entry_id: string | null;
+  created_at: string; // ISO datetime
+};
+
+/** Inner payload for notifications list response. */
+export type NotificationLogListData = {
+  notifications: NotificationLogItem[];
+};
+
+/** Response shape for GET schedule/notifications (status + message + data). */
+export type NotificationLogResponse = {
+  status: 1 | 0;
+  message: string;
+  data: NotificationLogListData;
+};
