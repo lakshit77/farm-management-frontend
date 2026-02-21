@@ -27,6 +27,12 @@ export const API_BASE_URLS: Record<Environment, string> = {
 /** Use mock data instead of real API calls when true. Set to false for real backend. */
 export const USE_MOCK_DATA = false;
 
+/**
+ * Display timezone for all dates and times in the UI (e.g. notification log, last run).
+ * Must be an IANA timezone name. America/New_York is used for Wellington FL and consistent ET display.
+ */
+export const DISPLAY_TIMEZONE = "America/New_York";
+
 /** Default API secret when VITE_API_SECRET is not set. Used for backend Authorization header. */
 export const DEFAULT_API_SECRET = 'lakshit';
 // export const DEFAULT_API_SECRET = 'n8n-secret';

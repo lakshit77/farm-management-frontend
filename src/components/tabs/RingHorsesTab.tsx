@@ -14,6 +14,7 @@ import type {
   ScheduleEntry,
 } from "../../api";
 import type { DashboardFilters } from "../FilterBar";
+import { entryStatusKind } from "../../utils/entryStatus";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,8 +92,10 @@ function filterSchedule(
           ...c,
           entries: c.entries.filter(
             (e) =>
-              !horse ||
-              (e.horse?.name ?? "").toLowerCase() === horse
+              (!horse ||
+                (e.horse?.name ?? "").toLowerCase() === horse) &&
+              (!filters.statusFilter ||
+                entryStatusKind(e) === filters.statusFilter)
           ),
         }))
         .filter((c) => c.entries.length > 0),

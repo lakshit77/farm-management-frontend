@@ -35,6 +35,7 @@ import {
   type NotificationLogItem,
 } from "../api";
 import { DASHBOARD_REFRESH_EVENT } from "../constants";
+import { entryStatusKind } from "../utils/entryStatus";
 import { FilterBar, type DashboardFilters } from "../components/FilterBar";
 import { OverviewTab } from "../components/tabs/OverviewTab";
 import { ClassesHorsesTab } from "../components/tabs/ClassesHorsesTab";
@@ -111,7 +112,7 @@ function getClassOptions(data: ScheduleViewData | null): string[] {
 }
 
 /**
- * Filter notifications client-side by the current horse/class filter.
+ * Filter notifications client-side by the current horse/class/status filter.
  * Only filters when entry_id is present; unlinked notifications always show.
  */
 function filterNotifications(
@@ -119,7 +120,12 @@ function filterNotifications(
   filters: DashboardFilters,
   scheduleData: ScheduleViewData | null
 ): NotificationLogItem[] {
-  if (!filters.horseName && !filters.className) return items;
+  if (
+    !filters.horseName &&
+    !filters.className &&
+    !filters.statusFilter
+  )
+    return items;
   // Build a set of entry_ids that match the filter
   const matchingEntryIds = new Set<string>();
   if (scheduleData?.events) {
@@ -133,7 +139,11 @@ function filterNotifications(
             !filters.horseName ||
             (entry.horse?.name ?? "").toLowerCase() ===
               filters.horseName.toLowerCase();
-          if (clsMatch && horseMatch) matchingEntryIds.add(entry.id);
+          const statusMatch =
+            !filters.statusFilter ||
+            entryStatusKind(entry) === filters.statusFilter;
+          if (clsMatch && horseMatch && statusMatch)
+            matchingEntryIds.add(entry.id);
         }
       }
     }
@@ -157,6 +167,7 @@ export function DashboardView(): React.ReactElement {
   const [filters, setFilters] = useState<DashboardFilters>({
     horseName: "",
     className: "",
+    statusFilter: "",
   });
 
   // Fetched data
@@ -189,7 +200,7 @@ export function DashboardView(): React.ReactElement {
   const fetchAll = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError(null);
-    setFilters({ horseName: "", className: "" });
+    setFilters({ horseName: "", className: "", statusFilter: "" });
 
     try {
       if (SCHEDULE_VIEW_API.useMockData) {

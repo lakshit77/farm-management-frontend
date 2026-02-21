@@ -14,6 +14,7 @@ import {
   CATEGORY_LABELS,
   type NotificationCategory,
 } from "../../utils/notificationConfig";
+import { DISPLAY_TIMEZONE } from "../../config";
 
 const CATEGORY_TABS: { value: NotificationCategory | "all"; label: string }[] = [
   { value: "all", label: "All" },
@@ -23,17 +24,20 @@ const CATEGORY_TABS: { value: NotificationCategory | "all"; label: string }[] = 
   { value: "result", label: "Results" },
 ];
 
-/** Format ISO datetime to time + short date. */
+/** Format ISO datetime to time + short date in DISPLAY_TIMEZONE (America/New_York). */
 function formatNotifTime(iso: string): { time: string; date: string } {
   try {
     const d = new Date(iso);
+    const opts = { timeZone: DISPLAY_TIMEZONE } as const;
     return {
-      time: d.toLocaleTimeString(undefined, {
+      time: d.toLocaleTimeString("en-US", {
+        ...opts,
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
       }),
-      date: d.toLocaleDateString(undefined, {
+      date: d.toLocaleDateString("en-US", {
+        ...opts,
         month: "short",
         day: "numeric",
       }),

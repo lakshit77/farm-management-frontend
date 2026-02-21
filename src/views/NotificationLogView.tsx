@@ -14,6 +14,7 @@ import {
   CATEGORY_LABELS,
   type NotificationCategory,
 } from "../utils/notificationConfig";
+import { DISPLAY_TIMEZONE } from "../config";
 
 const PAGE_SIZE = 50;
 
@@ -33,11 +34,12 @@ const TYPE_OPTIONS = [
   { value: "SCRATCHED", label: "Scratched" },
 ];
 
-/** Format ISO datetime to time-only (e.g. 10:47 AM) for display. */
+/** Format ISO datetime to time-only (e.g. 10:47 AM) in DISPLAY_TIMEZONE (America/New_York). */
 function formatTime(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleTimeString(undefined, {
+    return d.toLocaleTimeString("en-US", {
+      timeZone: DISPLAY_TIMEZONE,
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -47,11 +49,12 @@ function formatTime(iso: string): string {
   }
 }
 
-/** Format ISO datetime to short date for display. */
+/** Format ISO datetime to short date in DISPLAY_TIMEZONE (America/New_York). */
 function formatDate(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, {
+    return d.toLocaleDateString("en-US", {
+      timeZone: DISPLAY_TIMEZONE,
       month: "short",
       day: "numeric",
       year: "numeric",

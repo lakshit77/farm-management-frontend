@@ -33,6 +33,7 @@ import type {
   ScheduleClass,
 } from "../../api";
 import type { DashboardFilters } from "../FilterBar";
+import { entryStatusKind } from "../../utils/entryStatus";
 
 // ---------------------------------------------------------------------------
 // Types for derived data
@@ -49,7 +50,7 @@ interface ClassProgressDatum {
 }
 
 /** Max characters for class name display before truncation with "...". */
-const HORSE_RESULT_CLASS_DISPLAY_LENGTH = 22;
+const HORSE_RESULT_CLASS_DISPLAY_LENGTH = 40;
 
 interface HorseResultDatum {
   horseName: string;
@@ -62,6 +63,12 @@ interface HorseResultDatum {
   placing: number | null;
   faults: number | null;
   status: string;
+}
+
+/** Horse results grouped by horse name for display. */
+interface HorseResultGroup {
+  horseName: string;
+  results: HorseResultDatum[];
 }
 
 /** Timeline source filter: group by horse, rider, or both. */
@@ -92,18 +99,6 @@ interface TimelineDatum {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Derive simple entry status for colour-coding. */
-function entryStatusKind(
-  entry: ScheduleEntry
-): "completed" | "active" | "upcoming" | "inactive" {
-  const s = (entry.status ?? "").toLowerCase();
-  if (s === "inactive") return "inactive";
-  const cs = (entry.class_status ?? entry.status ?? "").toLowerCase();
-  if (cs.includes("completed") || entry.gone_in) return "completed";
-  if (cs.includes("underway") || cs.includes("in progress")) return "active";
-  return "upcoming";
-}
 
 /** Parse "HH:MM:SS" or "YYYY-MM-DD HH:MM:SS" to minutes since midnight. */
 function toMinuteOfDay(value: string | null | undefined): number | null {
@@ -290,7 +285,7 @@ interface OverviewTabProps {
  */
 export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
   const [timelineSourceFilter, setTimelineSourceFilter] =
-    useState<TimelineSourceFilter>("both");
+    useState<TimelineSourceFilter>("horse");
 
   // Flatten all active entries respecting filters
   const allEntries = useMemo<Array<{ entry: ScheduleEntry; cls: ScheduleClass }>>(
@@ -311,6 +306,12 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
               filters.horseName &&
               (entry.horse?.name ?? "").toLowerCase() !==
                 filters.horseName.toLowerCase()
+            )
+              continue;
+            // Apply status filter (not started / underway / completed)
+            if (
+              filters.statusFilter &&
+              entryStatusKind(entry) !== filters.statusFilter
             )
               continue;
             result.push({ entry, cls });
@@ -416,6 +417,20 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
       };
     });
   }, [allEntries]);
+
+  // Horse results grouped by horse name (order preserved by first occurrence)
+  const horseResultsByHorse = useMemo<HorseResultGroup[]>(() => {
+    const groups = new Map<string, HorseResultDatum[]>();
+    for (const row of horseResultsData) {
+      const name = row.horseName;
+      if (!groups.has(name)) groups.set(name, []);
+      groups.get(name)!.push(row);
+    }
+    return Array.from(groups.entries()).map(([horseName, results]) => ({
+      horseName,
+      results,
+    }));
+  }, [horseResultsData]);
 
   // Timeline: sources (rows) and data points
   const { timelineSources, timelineData } = useMemo(() => {
@@ -622,44 +637,49 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
       )}
 
       {/* ─── Horse results ─── */}
-      {horseResultsData.length > 0 && (
+      {horseResultsByHorse.length > 0 && (
         <Section title="Horse Results">
-          {/* Mobile: card layout; Desktop: table */}
-          <div className="sm:hidden space-y-2">
-            {horseResultsData.map((row, i) => (
+          {/* Mobile: card per horse, with class rows grouped under horse name */}
+          <div className="sm:hidden space-y-4">
+            {horseResultsByHorse.map((group, gi) => (
               <div
-                key={i}
-                className="rounded-lg border border-border-card bg-surface-card-alt/50 p-3 space-y-2"
+                key={gi}
+                className="rounded-lg border border-border-card bg-surface-card-alt/50 overflow-visible"
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium text-text-primary truncate">{row.horseName}</span>
-                  <span className="shrink-0 w-2.5 h-2.5 rounded-full" style={{ background: STATUS_COLORS[row.status] ?? "#9CA3AF" }} title={row.status} aria-hidden />
+                <div className="px-3 py-2 border-b border-border-card bg-surface-card/80 rounded-t-lg">
+                  <span className="font-medium text-text-primary truncate block">{group.horseName}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-body">
-                  <span className="text-text-secondary">Class</span>
-                  <div className="group/class relative text-right">
-                    <span className="text-text-primary inline-block max-w-[18ch] truncate cursor-help">
-                      {row.className}
-                    </span>
-                    {row.fullClassName && (
-                      <div
-                        className="absolute right-0 bottom-full mb-1 hidden group-hover/class:block z-50 px-2 py-1.5 rounded-md border border-border-card bg-surface-card shadow-card text-xs font-body text-text-primary whitespace-normal max-w-[240px] pointer-events-none"
-                        role="tooltip"
-                      >
-                        {row.fullClassName}
+                <div className="p-3 space-y-3">
+                  {group.results.map((row, ri) => (
+                    <div key={ri} className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-body">
+                      <span className="text-text-secondary">Class</span>
+                      <div className="group/class relative text-right flex items-center justify-end gap-1.5">
+                        <span className="text-text-primary inline-block max-w-[18ch] truncate cursor-help outline-none" tabIndex={0}>
+                          {row.className}
+                        </span>
+                        <span className="shrink-0 w-2.5 h-2.5 rounded-full" style={{ background: STATUS_COLORS[row.status] ?? "#9CA3AF" }} title={row.status} aria-hidden />
+                        {row.fullClassName && (
+                          <div
+                            className="absolute right-0 left-auto top-full mt-1 w-[min(280px,calc(100vw-2rem))] sm:left-auto sm:right-0 sm:top-auto sm:bottom-full sm:mb-1 sm:mt-0 sm:w-auto sm:max-w-[240px] hidden group-hover/class:block group-focus-within/class:block z-50 px-2 py-1.5 rounded-md border border-border-card bg-surface-card shadow-card text-xs font-body text-text-primary whitespace-normal pointer-events-none"
+                            role="tooltip"
+                          >
+                            {row.fullClassName}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <span className="text-text-secondary">Placing</span>
-                  <span className="text-accent-green-dark font-medium tabular-nums text-right">{row.placing != null ? `#${row.placing}` : "—"}</span>
-                  <span className="text-text-secondary">Best Score</span>
-                  <span className="text-text-primary tabular-nums text-right">{row.score != null ? row.score.toFixed(2) : "—"}</span>
-                  <span className="text-text-secondary">Faults</span>
-                  <span className="text-text-primary tabular-nums text-right">{row.faults != null ? row.faults.toFixed(2) : "—"}</span>
+                      <span className="text-text-secondary">Placing</span>
+                      <span className="text-accent-green-dark font-medium tabular-nums text-right">{row.placing != null ? `#${row.placing}` : "—"}</span>
+                      <span className="text-text-secondary">Best Score</span>
+                      <span className="text-text-primary tabular-nums text-right">{row.score != null ? row.score.toFixed(2) : "—"}</span>
+                      <span className="text-text-secondary">Faults</span>
+                      <span className="text-text-primary tabular-nums text-right">{row.faults != null ? row.faults.toFixed(2) : "—"}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
           </div>
+          {/* Desktop: table grouped by horse (horse name rowSpan per group) */}
           <div className="hidden sm:block overflow-x-auto">
             <table className="w-full font-body text-sm border-collapse">
               <thead>
@@ -673,47 +693,54 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
                 </tr>
               </thead>
               <tbody>
-                {horseResultsData.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="border-b border-border-card/50 hover:bg-surface-card-alt/50 transition-colors"
-                  >
-                    <td className="py-2.5 pr-4 font-medium text-text-primary">
-                      {row.horseName}
-                    </td>
-                    <td className="py-2.5 pr-4 text-text-secondary min-w-[8rem] max-w-[14rem] align-top">
-                      <div className="group/class relative inline-block max-w-full">
-                        <span className="inline-block max-w-full truncate align-bottom cursor-help">
-                          {row.className}
-                        </span>
-                        {row.fullClassName && (
-                          <div
-                            className="absolute left-0 bottom-full mb-1 hidden group-hover/class:block z-50 px-2 py-1.5 rounded-md border border-border-card bg-surface-card shadow-card text-xs font-body text-text-primary whitespace-normal max-w-[280px] pointer-events-none"
-                            role="tooltip"
-                          >
-                            {row.fullClassName}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-2.5 pr-4 text-center">
-                      <span
-                        className="inline-block w-2.5 h-2.5 rounded-full"
-                        style={{ background: STATUS_COLORS[row.status] ?? "#9CA3AF" }}
-                        title={row.status}
-                      />
-                    </td>
-                    <td className="py-2.5 pr-4 text-center font-medium text-accent-green-dark tabular-nums">
-                      {row.placing != null ? `#${row.placing}` : "—"}
-                    </td>
-                    <td className="py-2.5 pr-4 text-center tabular-nums text-text-primary">
-                      {row.score != null ? row.score.toFixed(2) : "—"}
-                    </td>
-                    <td className="py-2.5 text-center tabular-nums text-text-primary">
-                      {row.faults != null ? row.faults.toFixed(2) : "—"}
-                    </td>
-                  </tr>
-                ))}
+                {horseResultsByHorse.map((group, gi) =>
+                  group.results.map((row, ri) => (
+                    <tr
+                      key={`${gi}-${ri}`}
+                      className="border-b border-border-card/50 hover:bg-surface-card-alt/50 transition-colors"
+                    >
+                      {ri === 0 ? (
+                        <td
+                          rowSpan={group.results.length}
+                          className="py-2.5 pr-4 font-medium text-text-primary align-middle border-r border-border-card/50"
+                        >
+                          {group.horseName}
+                        </td>
+                      ) : null}
+                      <td className="py-2.5 pr-4 text-text-secondary min-w-[8rem] max-w-[14rem] align-top">
+                        <div className="group/class relative inline-block max-w-full">
+                          <span className="inline-block max-w-full truncate align-bottom cursor-help">
+                            {row.className}
+                          </span>
+                          {row.fullClassName && (
+                            <div
+                              className="absolute left-0 bottom-full mb-1 hidden group-hover/class:block z-50 px-2 py-1.5 rounded-md border border-border-card bg-surface-card shadow-card text-xs font-body text-text-primary whitespace-normal max-w-[280px] pointer-events-none"
+                              role="tooltip"
+                            >
+                              {row.fullClassName}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2.5 pr-4 text-center">
+                        <span
+                          className="inline-block w-2.5 h-2.5 rounded-full"
+                          style={{ background: STATUS_COLORS[row.status] ?? "#9CA3AF" }}
+                          title={row.status}
+                        />
+                      </td>
+                      <td className="py-2.5 pr-4 text-center font-medium text-accent-green-dark tabular-nums">
+                        {row.placing != null ? `#${row.placing}` : "—"}
+                      </td>
+                      <td className="py-2.5 pr-4 text-center tabular-nums text-text-primary">
+                        {row.score != null ? row.score.toFixed(2) : "—"}
+                      </td>
+                      <td className="py-2.5 text-center tabular-nums text-text-primary">
+                        {row.faults != null ? row.faults.toFixed(2) : "—"}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

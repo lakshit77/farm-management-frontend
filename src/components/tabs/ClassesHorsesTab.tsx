@@ -25,6 +25,7 @@ import type {
   ScheduleEntry,
 } from "../../api";
 import type { DashboardFilters } from "../FilterBar";
+import { entryStatusKind } from "../../utils/entryStatus";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -50,18 +51,6 @@ function orderLabel(entry: ScheduleEntry): string {
   return "—";
 }
 
-/** Derive simple status for colour-coding. */
-function entryStatusKind(
-  entry: ScheduleEntry
-): "completed" | "active" | "upcoming" | "inactive" {
-  const s = (entry.status ?? "").toLowerCase();
-  if (s === "inactive") return "inactive";
-  const cs = (entry.class_status ?? entry.status ?? "").toLowerCase();
-  if (cs.includes("completed") || entry.gone_in) return "completed";
-  if (cs.includes("underway") || cs.includes("in progress")) return "active";
-  return "upcoming";
-}
-
 /** Filter events/classes/entries using DashboardFilters. */
 function filterSchedule(
   events: ScheduleEvent[],
@@ -78,7 +67,9 @@ function filterSchedule(
           ...c,
           entries: c.entries.filter(
             (e) =>
-              !horse || (e.horse?.name ?? "").toLowerCase() === horse
+              (!horse || (e.horse?.name ?? "").toLowerCase() === horse) &&
+              (!filters.statusFilter ||
+                entryStatusKind(e) === filters.statusFilter)
           ),
         }))
         .filter((c) => c.entries.length > 0),
@@ -403,7 +394,9 @@ export const ClassesHorsesTab: React.FC<ClassesHorsesTabProps> = ({
 
   const filteredEvents = filterSchedule(data.events ?? [], filters);
   const hasActiveFilters =
-    filters.horseName !== "" || filters.className !== "";
+    filters.horseName !== "" ||
+    filters.className !== "" ||
+    filters.statusFilter !== "";
 
   return (
     <div className="space-y-6 sm:space-y-8 min-w-0">

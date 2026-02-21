@@ -1,16 +1,19 @@
 /**
- * Shared filter bar for the dashboard. Provides Horse and Class dropdown selects
+ * Shared filter bar for the dashboard. Provides Horse, Class, and Status dropdown selects
  * populated from the currently loaded schedule data.
  */
 
 import React from "react";
-import { X, PawPrint, BookOpen, ChevronDown } from "lucide-react";
+import { X, PawPrint, BookOpen, ChevronDown, Activity } from "lucide-react";
+import type { StatusFilterValue } from "../utils/entryStatus";
 
 export interface DashboardFilters {
   /** Selected horse name or empty string for "all". */
   horseName: string;
   /** Selected class name or empty string for "all". */
   className: string;
+  /** Entry/class status filter: "" = all, "upcoming" = not started, "active" = underway, "completed" = completed. */
+  statusFilter: StatusFilterValue;
 }
 
 interface FilterBarProps {
@@ -34,7 +37,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   filters,
   onChange,
 }) => {
-  const hasActiveFilters = filters.horseName !== "" || filters.className !== "";
+  const hasActiveFilters =
+    filters.horseName !== "" ||
+    filters.className !== "" ||
+    filters.statusFilter !== "";
 
   const handleHorseChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
     onChange({ ...filters, horseName: e.target.value });
@@ -44,8 +50,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     onChange({ ...filters, className: e.target.value });
   };
 
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>): void => {
+    onChange({
+      ...filters,
+      statusFilter: e.target.value as StatusFilterValue,
+    });
+  };
+
   const clearAll = (): void => {
-    onChange({ horseName: "", className: "" });
+    onChange({ horseName: "", className: "", statusFilter: "" });
   };
 
   const selectClass =
@@ -87,6 +100,23 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               {name}
             </option>
           ))}
+        </select>
+        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 size-3.5 text-text-secondary pointer-events-none" aria-hidden />
+      </div>
+
+      {/* Status dropdown */}
+      <div className="relative flex-1 sm:flex-initial min-w-0 sm:shrink-0">
+        <Activity className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-text-secondary pointer-events-none" aria-hidden />
+        <select
+          aria-label="Filter by status"
+          value={filters.statusFilter}
+          onChange={handleStatusChange}
+          className={selectClass}
+        >
+          <option value="">All statuses</option>
+          <option value="upcoming">Not started</option>
+          <option value="active">Underway</option>
+          <option value="completed">Completed</option>
         </select>
         <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 size-3.5 text-text-secondary pointer-events-none" aria-hidden />
       </div>
