@@ -113,19 +113,17 @@ function buildSummaryFromPayload(
       return `${horse} placed #${placing} in ${class_name}. Prize: $${prize}`;
     }
     case "HORSE_COMPLETED": {
-      if (source === "horse_availability") {
-        const hasNext = p.has_next === true;
-        const nextClass = String(p.next_class_name ?? "");
-        const freeHours = p.free_hours ?? 0;
-        const freeMins = p.free_mins ?? 0;
-        if (hasNext && nextClass) {
-          return `${horse} finished ${class_name}. Next: ${nextClass} in ${freeHours}h ${freeMins}m.`;
-        }
-        return `${horse} finished ${class_name}. No more classes today.`;
-      }
       const faults = p.faults ?? "—";
       const time_s = p.time_s ?? p.time_one ?? "—";
-      return `${horse} completed trip in ${class_name}. Faults: ${faults} | Time: ${time_s}s.`;
+      const hasNext = p.has_next === true;
+      const nextClass = String(p.next_class_name ?? "");
+      const freeHours = p.free_hours ?? 0;
+      const freeMins = p.free_mins ?? 0;
+      const tripResult = `Faults: ${faults} | Time: ${time_s}s`;
+      if (hasNext && nextClass) {
+        return `${horse} finished ${class_name}. ${tripResult}. Next: ${nextClass} in ${freeHours}h ${freeMins}m.`;
+      }
+      return `${horse} finished ${class_name}. ${tripResult}. No more classes today.`;
     }
     case "SCRATCHED": {
       return `${horse} was scratched from ${class_name}.`;
