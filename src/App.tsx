@@ -109,7 +109,7 @@ function App(): React.ReactElement {
                 <Activity className="size-4 sm:size-3.5" aria-hidden />
               )}
               <span className="hidden md:inline-flex flex-col items-start">
-                <span>Monitor Classes</span>
+                <span>Sync Data</span>
                 {classMonitoringLastRun && (
                   <span className="text-xs font-normal text-text-secondary">
                     Last run: {trimLastRunForDisplay(classMonitoringLastRun) ?? classMonitoringLastRun}

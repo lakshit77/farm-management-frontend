@@ -26,6 +26,7 @@ import {
   Activity,
   Clock,
   Filter,
+  DollarSign,
 } from "lucide-react";
 import type {
   ScheduleViewData,
@@ -62,6 +63,8 @@ interface HorseResultDatum {
   score: number | null;
   placing: number | null;
   faults: number | null;
+  /** Total prize money for this entry, or null when none. */
+  prizeMoney: number | null;
   status: string;
 }
 
@@ -277,8 +280,8 @@ interface OverviewTabProps {
 }
 
 /**
- * Overview tab with three visualisations:
- * 1. Summary stat cards (show name, total horses, classes, notifications).
+ * Overview tab with summary and visualisations:
+ * 1. Summary stat cards (horses, classes, completed, in progress, prize money today).
  * 2. Class progress stacked bar chart (completed vs remaining trips).
  * 3. Horse results card (placing, best score, faults per class).
  * 4. Day timeline scatter chart (entries by start time, colour by status).
@@ -344,6 +347,19 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
     [allEntries]
   );
 
+  /** Total prize money earned today for the active (filtered) entries. */
+  const totalPrizeMoneyToday = useMemo(() => {
+    let sum = 0;
+    for (const { entry } of allEntries) {
+      const v = entry.total_prize_money;
+      if (v != null && v !== "") {
+        const n = Number.parseFloat(String(v).replace(/,/g, ""));
+        if (!Number.isNaN(n)) sum += n;
+      }
+    }
+    return sum;
+  }, [allEntries]);
+
   // Class progress data
   const classProgressData = useMemo<ClassProgressDatum[]>(() => {
     const byClass = new Map<
@@ -393,6 +409,14 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
       const bestScore =
         scores.length > 0 ? Math.max(...scores) : null;
       const faults = entry.faults_one != null ? Number(entry.faults_one) : null;
+      const prizeMoneyRaw = entry.total_prize_money;
+      const prizeMoney =
+        prizeMoneyRaw != null && prizeMoneyRaw !== ""
+          ? (() => {
+              const n = Number.parseFloat(String(prizeMoneyRaw).replace(/,/g, ""));
+              return !Number.isNaN(n) ? n : null;
+            })()
+          : null;
       const fullClassName =
         cls.class_number && cls.name
           ? `#${cls.class_number} ${cls.name}`
@@ -413,6 +437,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
             ? entry.placing
             : null,
         faults: faults != null && !isNaN(faults) ? faults : null,
+        prizeMoney,
         status: entryStatusKind(entry),
       };
     });
@@ -547,7 +572,7 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
   return (
     <div className="space-y-4 sm:space-y-6 min-w-0">
       {/* ─── Summary stats ─── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <StatCard
           icon={<PawPrint className="size-5" />}
           label="Horses"
@@ -567,6 +592,15 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
           icon={<Activity className="size-5" />}
           label="In progress"
           value={activeEntries}
+        />
+        <StatCard
+          icon={<DollarSign className="size-5" />}
+          label="Prize money today"
+          value={
+            totalPrizeMoneyToday > 0
+              ? `$${totalPrizeMoneyToday.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : "—"
+          }
         />
       </div>
 
@@ -673,6 +707,10 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
                       <span className="text-text-primary tabular-nums text-right">{row.score != null ? row.score.toFixed(2) : "—"}</span>
                       <span className="text-text-secondary">Faults</span>
                       <span className="text-text-primary tabular-nums text-right">{row.faults != null ? row.faults.toFixed(2) : "—"}</span>
+                      <span className="text-text-secondary">Prize money</span>
+                      <span className="text-text-primary tabular-nums text-right">
+                        {row.prizeMoney != null ? `$${row.prizeMoney.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -689,7 +727,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
                   <th className="text-center py-2 pr-4 font-medium text-text-secondary">Status</th>
                   <th className="text-center py-2 pr-4 font-medium text-text-secondary">Placing</th>
                   <th className="text-center py-2 pr-4 font-medium text-text-secondary">Best Score</th>
-                  <th className="text-center py-2 font-medium text-text-secondary">Faults</th>
+                  <th className="text-center py-2 pr-4 font-medium text-text-secondary">Faults</th>
+                  <th className="text-center py-2 font-medium text-text-secondary">Prize money</th>
                 </tr>
               </thead>
               <tbody>
@@ -735,8 +774,11 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ data, filters }) => {
                       <td className="py-2.5 pr-4 text-center tabular-nums text-text-primary">
                         {row.score != null ? row.score.toFixed(2) : "—"}
                       </td>
-                      <td className="py-2.5 text-center tabular-nums text-text-primary">
+                      <td className="py-2.5 pr-4 text-center tabular-nums text-text-primary">
                         {row.faults != null ? row.faults.toFixed(2) : "—"}
+                      </td>
+                      <td className="py-2.5 text-center tabular-nums text-text-primary">
+                        {row.prizeMoney != null ? `$${row.prizeMoney.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
                       </td>
                     </tr>
                   ))

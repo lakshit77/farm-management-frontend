@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo } from "react";
-import { CalendarX2 } from "lucide-react";
+import { CalendarX2, Filter } from "lucide-react";
 import type {
   ScheduleViewData,
   ScheduleEvent,
@@ -87,15 +87,18 @@ function filterSchedule(
     .map((ev) => ({
       ...ev,
       classes: ev.classes
-        .filter((c) => !cls || (c.name ?? "").toLowerCase() === cls)
+        .filter((c) => !cls || (c.name ?? "").trim().toLowerCase() === cls)
         .map((c) => ({
           ...c,
           entries: c.entries.filter(
-            (e) =>
-              (!horse ||
-                (e.horse?.name ?? "").toLowerCase() === horse) &&
-              (!filters.statusFilter ||
-                entryStatusKind(e) === filters.statusFilter)
+            (e) => {
+              const entryHorse = (e.horse?.name ?? "").trim().toLowerCase();
+              const horseMatch = !horse || entryHorse === horse;
+              const statusMatch =
+                !filters.statusFilter ||
+                entryStatusKind(e) === filters.statusFilter;
+              return horseMatch && statusMatch;
+            }
           ),
         }))
         .filter((c) => c.entries.length > 0),
@@ -244,8 +247,23 @@ export const RingHorsesTab: React.FC<RingHorsesTabProps> = ({ data, filters }) =
 
     const earliest = Math.min(...minutesWithTimes);
     const latest = Math.max(...minutesWithTimes);
-    const rangeStart = Math.max(0, earliest - BUFFER_MINUTES);
-    const rangeEnd = Math.min(24 * 60 - 1, latest + BUFFER_MINUTES);
+    /*
+     * Align the range start and end to the slot grid so that every entry
+     * bucket (Math.floor(minuteOfDay / SLOT_INTERVAL_MINUTES) * SLOT_INTERVAL_MINUTES)
+     * has a matching slot.  Without this alignment the loop can skip over
+     * the buckets entirely (e.g. earliest=453 → rangeStart=423, loop produces
+     * 423,453,... but the bucket is 450 and is never generated).
+     */
+    const rangeStart = Math.max(
+      0,
+      Math.floor((earliest - BUFFER_MINUTES) / SLOT_INTERVAL_MINUTES) *
+        SLOT_INTERVAL_MINUTES
+    );
+    const rangeEnd = Math.min(
+      24 * 60,
+      Math.ceil((latest + BUFFER_MINUTES) / SLOT_INTERVAL_MINUTES) *
+        SLOT_INTERVAL_MINUTES
+    );
 
     const slots: TimeSlot[] = [];
     for (let m = rangeStart; m <= rangeEnd; m += SLOT_INTERVAL_MINUTES) {
@@ -311,6 +329,17 @@ export const RingHorsesTab: React.FC<RingHorsesTabProps> = ({ data, filters }) =
     );
   }
 
+  const hasActiveFilters =
+    filters.horseName !== "" ||
+    filters.className !== "" ||
+    filters.statusFilter !== "";
+
+  const statusFilterLabel: Record<string, string> = {
+    upcoming: "Not started",
+    active: "Underway",
+    completed: "Completed",
+  };
+
   if (rings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -318,12 +347,40 @@ export const RingHorsesTab: React.FC<RingHorsesTabProps> = ({ data, filters }) =
         <p className="font-body text-text-secondary">
           No data to display for the current filter.
         </p>
+        {hasActiveFilters && (
+          <p className="font-body text-sm text-text-secondary mt-2">
+            Horse: {filters.horseName || "—"} · Class: {filters.className || "—"} · Status: {filters.statusFilter ? statusFilterLabel[filters.statusFilter] ?? filters.statusFilter : "—"}
+          </p>
+        )}
       </div>
     );
   }
 
   return (
     <div className="space-y-3 min-w-0">
+      {hasActiveFilters && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-body text-xs text-text-secondary">
+          <span className="flex items-center gap-1.5 font-medium text-accent-green-dark">
+            <Filter className="size-3.5 shrink-0" aria-hidden />
+            Active filters:
+          </span>
+          {filters.horseName && (
+            <span>
+              Horse: <span className="text-text-primary font-medium">{filters.horseName}</span>
+            </span>
+          )}
+          {filters.className && (
+            <span>
+              Class: <span className="text-text-primary font-medium">{filters.className}</span>
+            </span>
+          )}
+          {filters.statusFilter && (
+            <span>
+              Status: <span className="text-text-primary font-medium">{statusFilterLabel[filters.statusFilter] ?? filters.statusFilter}</span>
+            </span>
+          )}
+        </div>
+      )}
       <p className="font-body text-xs text-text-secondary">
         Hover or tap for details. Each horse has a unique color.
       </p>
