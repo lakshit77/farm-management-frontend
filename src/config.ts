@@ -9,7 +9,7 @@
 export type Environment = 'production' | 'uat';
 
 /** Current active environment. Change this to switch the API base URL for all endpoints. */
-export const CURRENT_ENVIRONMENT: Environment = 'uat';
+export const CURRENT_ENVIRONMENT: Environment = 'production';
 
 /**
  * API base URLs per environment.
@@ -17,7 +17,7 @@ export const CURRENT_ENVIRONMENT: Environment = 'uat';
  */
 const _productionBaseUrl =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
-  'http://44.197.122.197:8000';
+  'https://wellington.aibolt.ai';
 
 export const API_BASE_URLS: Record<Environment, string> = {
   uat: 'http://localhost:8000',
@@ -34,8 +34,8 @@ export const USE_MOCK_DATA = false;
 export const DISPLAY_TIMEZONE = "America/New_York";
 
 /** Default API secret when VITE_API_SECRET is not set. Used for backend Authorization header. */
-export const DEFAULT_API_SECRET = 'lakshit';
-// export const DEFAULT_API_SECRET = 'n8n-secret';
+// export const DEFAULT_API_SECRET = 'lakshit';
+export const DEFAULT_API_SECRET = 'n8n-secret';
 
 /**
  * API secret for backend authorization (Bearer token).
