@@ -320,7 +320,7 @@ export function DashboardView(): React.ReactElement {
               {/* Row 1 on mobile: date + refresh | Row 1 on desktop: all inline */}
               <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
                 {/* Date input */}
-                <div className="relative shrink-0 flex-1 min-w-0 sm:flex-initial">
+                <div className="relative flex-1 min-w-0 max-w-[11rem] sm:max-w-none sm:flex-initial">
                   <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-text-secondary pointer-events-none" aria-hidden />
                   <input
                     type="date"

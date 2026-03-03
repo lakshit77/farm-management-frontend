@@ -122,7 +122,20 @@ function HorseCard({
   timeLabel: string;
 }): React.ReactElement {
   const [showTooltip, setShowTooltip] = React.useState(false);
+  const cardRef = React.useRef<HTMLDivElement>(null);
   const horseName = entry.horse?.name ?? "Unknown";
+
+  /** Close the tooltip on any pointer-down event outside this card. */
+  React.useEffect(() => {
+    if (!showTooltip) return;
+    const handler = (e: PointerEvent): void => {
+      if (!cardRef.current?.contains(e.target as Node)) {
+        setShowTooltip(false);
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [showTooltip]);
   const riderName = entry.rider?.name ?? null;
   const status = entry.status ?? "";
   const classStatus = entry.class_status ?? "";
@@ -141,6 +154,7 @@ function HorseCard({
 
   return (
     <div
+      ref={cardRef}
       className="group relative rounded border border-border-card px-2 py-1.5 sm:py-1 shadow-sm transition-shadow hover:shadow-md touch-manipulation min-h-[44px] sm:min-h-0 flex items-center"
       style={{
         backgroundColor: color,
