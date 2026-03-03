@@ -73,7 +73,7 @@ function stripDatesInSummary(text: string): string {
  */
 function buildSummaryFromPayload(
   notificationType: string,
-  source: string,
+  _source: string,
   payload: Record<string, unknown> | null
 ): string {
   if (!payload || typeof payload !== "object") return "";
