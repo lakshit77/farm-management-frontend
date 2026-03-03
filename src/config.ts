@@ -17,7 +17,7 @@ export const CURRENT_ENVIRONMENT: Environment = 'production';
  */
 const _productionBaseUrl =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) ||
-  'https://wellington.aibolt.ai';
+  'https://api.aibolt.ai';
 
 export const API_BASE_URLS: Record<Environment, string> = {
   uat: 'http://localhost:8000',
