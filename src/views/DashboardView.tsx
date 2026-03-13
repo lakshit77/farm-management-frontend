@@ -41,6 +41,8 @@ import { OverviewTab } from "../components/tabs/OverviewTab";
 import { ClassesHorsesTab } from "../components/tabs/ClassesHorsesTab";
 import { RingHorsesTab } from "../components/tabs/RingHorsesTab";
 import { NotificationsTab } from "../components/tabs/NotificationsTab";
+import { useIsMobile } from "../hooks/useIsMobile";
+import { MobileShell } from "../components/mobile/MobileShell";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -308,33 +310,58 @@ export function DashboardView(): React.ReactElement {
   // Render
   // -------------------------------------------------------------------------
 
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <MobileShell
+        showName={scheduleData?.show_name ?? null}
+        date={date}
+        onDateChange={setDate}
+        filters={filters}
+        onFiltersChange={setFilters}
+        horseOptions={horseOptions}
+        classOptions={classOptions}
+        onSync={fetchAll}
+        syncing={loading}
+        onRefresh={fetchAll}
+        loading={loading}
+        error={error}
+        scheduleData={scheduleData}
+        notifications={filteredNotifications}
+        loadingMoreNotifs={loadingMoreNotifs}
+        notifHasMore={notifHasMore}
+        onLoadMoreNotifs={handleLoadMoreNotifications}
+      />
+    );
+  }
+
   return (
     <div className="min-h-full bg-background-primary">
       {/* ── Top toolbar ── */}
       <div className="sticky top-0 z-20 bg-surface-card border-b border-border-card shadow-card">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 lg:px-8">
-          {/* Controls bar — stacks on mobile */}
+          {/* Controls bar */}
           <div className="py-2 sm:py-3">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 rounded-card border border-border-card bg-surface-card shadow-card px-3 py-2 sm:py-2 overflow-x-auto">
+            <div className="flex flex-row items-center gap-2 rounded-card border border-border-card bg-surface-card shadow-card px-3 py-2 overflow-x-auto">
 
-              {/* Row 1 on mobile: date + refresh | Row 1 on desktop: all inline */}
-              <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial">
+              <div className="flex items-center gap-2 min-w-0 flex-initial">
                 {/* Date input */}
-                <div className="relative flex-1 min-w-0 max-w-[11rem] sm:max-w-none sm:flex-initial">
+                <div className="relative flex-initial">
                   <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-text-secondary pointer-events-none" aria-hidden />
                   <input
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="h-10 sm:h-9 w-full sm:w-38 font-body text-sm text-text-primary border border-border-card rounded-lg pl-8 pr-2 bg-background-primary focus:outline-none focus:ring-2 focus:ring-accent-green focus:border-transparent touch-manipulation"
+                    className="h-9 w-38 font-body text-sm text-text-primary border border-border-card rounded-lg pl-8 pr-2 bg-background-primary focus:outline-none focus:ring-2 focus:ring-accent-green focus:border-transparent"
                     aria-label="Show date"
                     style={{ minWidth: "8rem" }}
                   />
                 </div>
 
-                {/* Filter dropdowns — desktop only; mobile shows in row below */}
+                {/* Filter dropdowns */}
                 {!loading && scheduleData && (
-                  <div className="hidden sm:flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <div className="h-6 w-px bg-border-card shrink-0 mx-1" aria-hidden />
                     <FilterBar
                       horseOptions={horseOptions}
@@ -345,39 +372,27 @@ export function DashboardView(): React.ReactElement {
                   </div>
                 )}
 
-                {/* Refresh — right on desktop, inline on mobile */}
-                <div className="shrink-0 sm:ml-auto sm:pl-2">
+                {/* Refresh */}
+                <div className="shrink-0 ml-auto pl-2">
                   <button
                     type="button"
                     onClick={fetchAll}
                     disabled={loading}
-                    className="inline-flex items-center justify-center gap-1.5 min-h-[44px] sm:min-h-0 sm:h-9 px-4 font-body text-sm font-medium text-text-on-dark bg-accent-green hover:bg-accent-green-dark disabled:opacity-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors touch-manipulation"
+                    className="inline-flex items-center justify-center gap-1.5 h-9 px-4 font-body text-sm font-medium text-text-on-dark bg-accent-green hover:bg-accent-green-dark disabled:opacity-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
                   >
                     {loading
-                      ? <Loader2 className="size-4 sm:size-3.5 animate-spin" aria-hidden />
-                      : <RefreshCw className="size-4 sm:size-3.5" aria-hidden />}
+                      ? <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                      : <RefreshCw className="size-3.5" aria-hidden />}
                     <span>Refresh</span>
                   </button>
                 </div>
               </div>
-
-              {/* Filters on separate row on mobile */}
-              {!loading && scheduleData && (
-                <div className="sm:hidden w-full pt-2 border-t border-border-card/60 -mx-1 px-1">
-                  <FilterBar
-                    horseOptions={horseOptions}
-                    classOptions={classOptions}
-                    filters={filters}
-                    onChange={setFilters}
-                  />
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Tab bar — horizontal scroll on mobile */}
+          {/* Tab bar */}
           <div
-            className="flex gap-0 -mb-px overflow-x-auto overflow-y-hidden scrollbar-hide -mx-3 sm:mx-0 px-3 sm:px-0"
+            className="flex gap-0 -mb-px"
             role="tablist"
             aria-label="Dashboard sections"
           >
@@ -391,8 +406,8 @@ export function DashboardView(): React.ReactElement {
                   aria-selected={isActive}
                   onClick={() => setActiveTab(tab.id)}
                   className={`
-                    inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-3 font-body text-sm font-medium shrink-0 min-h-[44px] sm:min-h-0
-                    border-b-2 focus:outline-none transition-colors touch-manipulation
+                    inline-flex items-center gap-2 px-4 py-3 font-body text-sm font-medium shrink-0
+                    border-b-2 focus:outline-none transition-colors
                     ${
                       isActive
                         ? "border-accent-green-dark text-accent-green-dark"
@@ -403,7 +418,7 @@ export function DashboardView(): React.ReactElement {
                   {tab.icon}
                   <span className="whitespace-nowrap">{tab.label}</span>
                   {tab.id === "notifications" && filteredNotifications.length > 0 && (
-                    <span className="ml-0.5 sm:ml-1 bg-accent-green/15 text-accent-green-dark text-xs rounded-full px-1.5 py-0.5 tabular-nums">
+                    <span className="ml-1 bg-accent-green/15 text-accent-green-dark text-xs rounded-full px-1.5 py-0.5 tabular-nums">
                       {filteredNotifications.length}
                     </span>
                   )}
@@ -418,8 +433,8 @@ export function DashboardView(): React.ReactElement {
       <div
         className={
           activeTab === "rings"
-            ? "w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0 overflow-x-hidden"
-            : "max-w-6xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 min-w-0 overflow-x-hidden"
+            ? "w-full px-6 lg:px-8 py-6 min-w-0 overflow-x-hidden"
+            : "max-w-6xl mx-auto px-6 lg:px-8 py-6 min-w-0 overflow-x-hidden"
         }
       >
         {/* Error */}
