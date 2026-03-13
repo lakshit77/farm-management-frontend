@@ -7,6 +7,7 @@ import { MobileOverviewTab } from "./MobileOverviewTab";
 import { MobileClassesTab } from "./MobileClassesTab";
 import { MobileRingView } from "./MobileRingView";
 import { MobileNotificationsTab } from "./MobileNotificationsTab";
+import { ConfirmSyncModal } from "../ConfirmSyncModal";
 import type { DashboardFilters } from "../FilterBar";
 import type { ScheduleViewData, NotificationLogItem } from "../../api";
 
@@ -50,6 +51,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<MobileTab>("overview");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
 
   const hasActiveFilters =
     filters.horseName !== "" ||
@@ -63,7 +65,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         date={date}
         onDateChange={onDateChange}
         onFilterOpen={() => setFilterOpen(true)}
-        onSync={onSync}
+        onSync={() => setSyncModalOpen(true)}
         syncing={syncing}
         hasActiveFilters={hasActiveFilters}
       />
@@ -126,6 +128,15 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         classOptions={classOptions}
         filters={filters}
         onChange={onFiltersChange}
+      />
+
+      <ConfirmSyncModal
+        open={syncModalOpen}
+        onCancel={() => setSyncModalOpen(false)}
+        onConfirm={() => {
+          setSyncModalOpen(false);
+          onSync();
+        }}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { DashboardView } from "./views";
 import { CLASS_MONITOR_API, getApiHeaders } from "./api";
 import { DASHBOARD_REFRESH_EVENT } from "./constants";
 import { useIsMobile } from "./hooks/useIsMobile";
+import { ConfirmSyncModal } from "./components/ConfirmSyncModal";
 
 function getTodayStr(): string {
   const d = new Date();
@@ -35,6 +36,7 @@ function App(): React.ReactElement {
   const [headerLabel, setHeaderLabel] = useState<string | null>(null);
   const [classMonitoringLastRun, setClassMonitoringLastRun] = useState<string | null>(null);
   const [classMonitorLoading, setClassMonitorLoading] = useState<boolean>(false);
+  const [syncModalOpen, setSyncModalOpen] = useState<boolean>(false);
   const isMobile = useIsMobile();
 
   const triggerDashboardRefresh = useCallback((): void => {
@@ -112,7 +114,7 @@ function App(): React.ReactElement {
           <div className="ml-auto flex items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={handleClassMonitor}
+              onClick={() => setSyncModalOpen(true)}
               disabled={classMonitorLoading}
               title={classMonitoringLastRun ? `Last run: ${classMonitoringLastRun}` : "Check active classes for status changes and results"}
               aria-label="Monitor classes: check for class updates and results"
@@ -138,6 +140,15 @@ function App(): React.ReactElement {
         <main className="flex-1 min-w-0 min-h-0" id="main-content" role="main">
           <DashboardView />
         </main>
+
+        <ConfirmSyncModal
+          open={syncModalOpen}
+          onCancel={() => setSyncModalOpen(false)}
+          onConfirm={() => {
+            setSyncModalOpen(false);
+            handleClassMonitor();
+          }}
+        />
       </div>
     </HeaderLabelContext.Provider>
   );
