@@ -184,9 +184,26 @@ export const MobileOverviewTab: React.FC<MobileOverviewTabProps> = ({
     });
   }, [allEntries]);
 
-  /* Horse results data */
-  const horseResults = useMemo(() => {
-    return allEntries.map(({ entry, cls }) => {
+  /* Horse results grouped by horse name */
+  interface HorseResultEntry {
+    fullClassName: string;
+    bestScore: number | null;
+    placing: number | null;
+    faults: number | null;
+    prizeMoney: number | null;
+    status: string;
+  }
+  interface HorseResultGroup {
+    horseName: string;
+    entries: HorseResultEntry[];
+  }
+
+  const horseResultGroups = useMemo<HorseResultGroup[]>(() => {
+    const groups = new Map<string, HorseResultEntry[]>();
+    for (const { entry, cls } of allEntries) {
+      const horseName = entry.horse?.name ?? "Unknown";
+      if (!groups.has(horseName)) groups.set(horseName, []);
+
       const scores = [
         entry.score1, entry.score2, entry.score3,
         entry.score4, entry.score5, entry.score6,
@@ -206,12 +223,8 @@ export const MobileOverviewTab: React.FC<MobileOverviewTabProps> = ({
               return !Number.isNaN(n) ? n : null;
             })()
           : null;
-      const classLabel = cls.class_number
-        ? `#${cls.class_number}`
-        : cls.name.slice(0, 16) + (cls.name.length > 16 ? "..." : "");
-      return {
-        horseName: entry.horse?.name ?? "Unknown",
-        classLabel,
+
+      groups.get(horseName)!.push({
         fullClassName: cls.class_number
           ? `#${cls.class_number} ${cls.name}`
           : cls.name,
@@ -223,8 +236,12 @@ export const MobileOverviewTab: React.FC<MobileOverviewTabProps> = ({
         faults: faults != null && !isNaN(faults) ? faults : null,
         prizeMoney,
         status: entryStatusKind(entry),
-      };
-    });
+      });
+    }
+    return Array.from(groups.entries()).map(([horseName, entries]) => ({
+      horseName,
+      entries,
+    }));
   }, [allEntries]);
 
   /* Timeline data: grouped by time slot */
@@ -261,8 +278,8 @@ export const MobileOverviewTab: React.FC<MobileOverviewTabProps> = ({
       }));
   }, [allEntries]);
 
-  /* Expanded horse result row */
-  const [expandedResultIdx, setExpandedResultIdx] = useState<number | null>(null);
+  /* Expanded horse result group (by horse name) */
+  const [expandedHorse, setExpandedHorse] = useState<string | null>(null);
 
   if (!data) {
     return (
@@ -315,7 +332,6 @@ export const MobileOverviewTab: React.FC<MobileOverviewTabProps> = ({
         <CollapsibleSection
           title="Class Progress"
           count={classProgressData.length}
-          defaultOpen
         >
           <div className="px-3.5 py-3 space-y-2.5">
             {classProgressData.map((cls, i) => {
@@ -327,7 +343,7 @@ export const MobileOverviewTab: React.FC<MobileOverviewTabProps> = ({
                 <div key={i}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-body text-xs text-text-primary truncate max-w-[70%]">
-                      {cls.classNumber ? `#${cls.classNumber}` : cls.name.slice(0, 20)}
+                      {cls.classNumber ? `#${cls.classNumber} ${cls.name}` : cls.name}
                     </span>
                     <span className="font-body text-[10px] text-text-secondary tabular-nums">
                       {cls.completed}/{cls.total}
@@ -346,44 +362,31 @@ export const MobileOverviewTab: React.FC<MobileOverviewTabProps> = ({
         </CollapsibleSection>
       )}
 
-      {/* Horse Results */}
-      {horseResults.length > 0 && (
-        <CollapsibleSection title="Horse Results" count={horseResults.length}>
+      {/* Horse Results — grouped by horse */}
+      {horseResultGroups.length > 0 && (
+        <CollapsibleSection title="Horse Results" count={horseResultGroups.length}>
           <div className="divide-y divide-border-card/60">
-            {horseResults.map((row, i) => {
-              const isExpanded = expandedResultIdx === i;
+            {horseResultGroups.map((group) => {
+              const isExpanded = expandedHorse === group.horseName;
+              const entryCount = group.entries.length;
               return (
-                <div key={i}>
+                <div key={group.horseName}>
                   <button
                     type="button"
                     onClick={() =>
-                      setExpandedResultIdx(isExpanded ? null : i)
+                      setExpandedHorse(isExpanded ? null : group.horseName)
                     }
                     className="w-full flex items-center gap-2 px-3.5 py-2.5 text-left touch-manipulation active:bg-surface-card-alt/50"
                   >
-                    <span
-                      className="shrink-0 w-2 h-2 rounded-full"
-                      style={{
-                        background:
-                          STATUS_COLORS[row.status] ?? "#9CA3AF",
-                      }}
-                    />
+                    <span className="shrink-0 w-5 h-5 rounded-full bg-accent-green/10 flex items-center justify-center">
+                      <PawPrint className="size-3 text-accent-green-dark" />
+                    </span>
                     <span className="font-body text-sm font-medium text-text-primary truncate flex-1 min-w-0">
-                      {row.horseName}
+                      {group.horseName}
                     </span>
-                    <span className="font-body text-xs text-text-secondary truncate max-w-[5rem]">
-                      {row.classLabel}
+                    <span className="font-body text-[10px] text-text-secondary bg-background-primary border border-border-card rounded-full px-1.5 py-0.5 tabular-nums shrink-0">
+                      {entryCount} {entryCount === 1 ? "class" : "classes"}
                     </span>
-                    {row.placing != null && (
-                      <span className="font-body text-xs font-medium text-accent-green-dark tabular-nums shrink-0">
-                        #{row.placing}
-                      </span>
-                    )}
-                    {row.bestScore != null && (
-                      <span className="font-body text-xs text-text-primary tabular-nums shrink-0">
-                        {row.bestScore.toFixed(1)}
-                      </span>
-                    )}
                     <span className="text-text-secondary shrink-0">
                       {isExpanded ? (
                         <ChevronDown className="size-3.5" />
@@ -394,38 +397,53 @@ export const MobileOverviewTab: React.FC<MobileOverviewTabProps> = ({
                   </button>
 
                   {isExpanded && (
-                    <div className="px-3.5 pb-3 pt-0.5">
-                      <div className="rounded-lg bg-background-primary border border-border-card/60 p-2.5 grid grid-cols-2 gap-x-4 gap-y-1 text-xs font-body">
-                        <span className="text-text-secondary">Class</span>
-                        <span className="text-text-primary text-right truncate">
-                          {row.fullClassName}
-                        </span>
-                        <span className="text-text-secondary">Placing</span>
-                        <span className="text-accent-green-dark font-medium text-right tabular-nums">
-                          {row.placing != null ? `#${row.placing}` : "—"}
-                        </span>
-                        <span className="text-text-secondary">Best Score</span>
-                        <span className="text-text-primary text-right tabular-nums">
-                          {row.bestScore != null
-                            ? row.bestScore.toFixed(2)
-                            : "—"}
-                        </span>
-                        <span className="text-text-secondary">Faults</span>
-                        <span className="text-text-primary text-right tabular-nums">
-                          {row.faults != null
-                            ? row.faults.toFixed(2)
-                            : "—"}
-                        </span>
-                        <span className="text-text-secondary">Prize Money</span>
-                        <span className="text-text-primary text-right tabular-nums">
-                          {row.prizeMoney != null
-                            ? `$${row.prizeMoney.toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}`
-                            : "—"}
-                        </span>
-                      </div>
+                    <div className="px-3.5 pb-3 pt-1 space-y-2">
+                      {group.entries.map((entry, ei) => (
+                        <div
+                          key={ei}
+                          className="rounded-lg bg-background-primary border border-border-card/60 p-2.5"
+                        >
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <span
+                              className="shrink-0 w-2 h-2 rounded-full"
+                              style={{
+                                background:
+                                  STATUS_COLORS[entry.status] ?? "#9CA3AF",
+                              }}
+                            />
+                            <span className="font-body text-xs font-medium text-text-primary truncate">
+                              {entry.fullClassName}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs font-body">
+                            <span className="text-text-secondary">Placing</span>
+                            <span className="text-accent-green-dark font-medium text-right tabular-nums">
+                              {entry.placing != null ? `#${entry.placing}` : "—"}
+                            </span>
+                            <span className="text-text-secondary">Best Score</span>
+                            <span className="text-text-primary text-right tabular-nums">
+                              {entry.bestScore != null
+                                ? entry.bestScore.toFixed(2)
+                                : "—"}
+                            </span>
+                            <span className="text-text-secondary">Faults</span>
+                            <span className="text-text-primary text-right tabular-nums">
+                              {entry.faults != null
+                                ? entry.faults.toFixed(2)
+                                : "—"}
+                            </span>
+                            <span className="text-text-secondary">Prize Money</span>
+                            <span className="text-text-primary text-right tabular-nums">
+                              {entry.prizeMoney != null
+                                ? `$${entry.prizeMoney.toLocaleString("en-US", {
+                                    minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2,
+                                  })}`
+                                : "—"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>

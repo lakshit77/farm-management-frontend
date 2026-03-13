@@ -1,10 +1,24 @@
-import React, { useRef } from "react";
+import React, { useRef, useMemo } from "react";
 import {
   Calendar,
   SlidersHorizontal,
   Activity,
   Loader2,
 } from "lucide-react";
+
+function formatDateForDisplay(dateStr: string): string {
+  try {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 interface MobileHeaderProps {
   showName: string | null;
@@ -26,6 +40,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   hasActiveFilters,
 }) => {
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const dateLabel = useMemo(() => formatDateForDisplay(date), [date]);
 
   return (
     <header className="sticky top-0 z-40 h-12 min-h-12 flex items-center gap-1.5 px-3 bg-surface-card border-b border-border-card shadow-card safe-area-top">
@@ -37,9 +52,14 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         height={20}
         aria-hidden
       />
-      <span className="font-heading text-sm font-bold text-accent-green-dark truncate min-w-0 flex-1">
-        {showName || "ShowGroundsLive"}
-      </span>
+      <div className="min-w-0 flex-1">
+        <p className="font-heading text-sm font-bold text-accent-green-dark truncate leading-tight">
+          {showName || "ShowGroundsLive"}
+        </p>
+        <p className="font-body text-[10px] text-text-secondary leading-tight truncate">
+          {dateLabel}
+        </p>
+      </div>
 
       {/* Date picker — hidden input triggered by icon button */}
       <div className="relative shrink-0">
