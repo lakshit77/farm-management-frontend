@@ -6,6 +6,7 @@ import { FilterSheet } from "./FilterSheet";
 import { MobileOverviewTab } from "./MobileOverviewTab";
 import { MobileClassesTab } from "./MobileClassesTab";
 import { MobileRingView } from "./MobileRingView";
+import { MobileRingBoard } from "./MobileRingBoard";
 import { MobileNotificationsTab } from "./MobileNotificationsTab";
 import { ConfirmSyncModal } from "../ConfirmSyncModal";
 import type { DashboardFilters } from "../FilterBar";
@@ -70,10 +71,18 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         hasActiveFilters={hasActiveFilters}
       />
 
-      {/* Scrollable content area */}
+      {/* Scrollable content area — Board tab is no-scroll/no-padding */}
       <main
-        className="flex-1 overflow-y-auto overflow-x-hidden px-3 pt-3 min-h-0"
-        style={{ paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px) + 0.75rem)" }}
+        className={`flex-1 overflow-x-hidden min-h-0 ${
+          activeTab === "board"
+            ? "overflow-hidden p-0"
+            : "overflow-y-auto px-3 pt-3"
+        }`}
+        style={
+          activeTab === "board"
+            ? undefined
+            : { paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px) + 0.75rem)" }
+        }
       >
         {/* Error banner */}
         {error && (
@@ -102,6 +111,9 @@ export const MobileShell: React.FC<MobileShellProps> = ({
             )}
             {activeTab === "rings" && (
               <MobileRingView data={scheduleData} filters={filters} />
+            )}
+            {activeTab === "board" && (
+              <MobileRingBoard data={scheduleData} filters={filters} />
             )}
             {activeTab === "notifications" && (
               <MobileNotificationsTab

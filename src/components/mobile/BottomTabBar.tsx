@@ -1,12 +1,13 @@
 import React from "react";
-import { LayoutDashboard, BookOpen, LayoutGrid, Bell } from "lucide-react";
+import { LayoutDashboard, BookOpen, LayoutGrid, Bell, Grid3x3 } from "lucide-react";
 
-export type MobileTab = "overview" | "classes" | "rings" | "notifications";
+export type MobileTab = "overview" | "classes" | "rings" | "board" | "notifications";
 
 const TABS: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <LayoutDashboard className="size-5" /> },
   { id: "classes", label: "Classes", icon: <BookOpen className="size-5" /> },
   { id: "rings", label: "Rings", icon: <LayoutGrid className="size-5" /> },
+  { id: "board", label: "Board", icon: <Grid3x3 className="size-5" /> },
   { id: "notifications", label: "Alerts", icon: <Bell className="size-5" /> },
 ];
 
