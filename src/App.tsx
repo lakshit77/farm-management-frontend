@@ -1,11 +1,13 @@
 import React, { useState, useCallback } from "react";
-import { Activity, Loader2 } from "lucide-react";
+import { Activity, Loader2, LogOut } from "lucide-react";
 import { HeaderLabelContext } from "./contexts/HeaderLabelContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { DashboardView } from "./views";
 import { CLASS_MONITOR_API, getApiHeaders } from "./api";
 import { DASHBOARD_REFRESH_EVENT } from "./constants";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { ConfirmSyncModal } from "./components/ConfirmSyncModal";
+import LoginPage from "./components/LoginPage";
 
 function getTodayStr(): string {
   const d = new Date();
@@ -32,7 +34,34 @@ function trimLastRunForDisplay(full: string | null): string | null {
  * The old sidebar + tab routing has been replaced by DashboardView's
  * internal tab bar and shared filter.
  */
+function AppInner(): React.ReactElement {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
+
+  return <AppShell />;
+}
+
 function App(): React.ReactElement {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
+  );
+}
+
+function AppShell(): React.ReactElement {
+  const { signOut } = useAuth();
   const [headerLabel, setHeaderLabel] = useState<string | null>(null);
   const [classMonitoringLastRun, setClassMonitoringLastRun] = useState<string | null>(null);
   const [classMonitorLoading, setClassMonitorLoading] = useState<boolean>(false);
@@ -112,6 +141,15 @@ function App(): React.ReactElement {
           )}
 
           <div className="ml-auto flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={signOut}
+              title="Sign out"
+              aria-label="Sign out"
+              className="inline-flex items-center justify-center h-9 w-9 font-body text-sm text-text-secondary bg-surface-card border border-border-card hover:bg-background-primary hover:text-warm-rust rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
+            >
+              <LogOut className="size-3.5" aria-hidden />
+            </button>
             <button
               type="button"
               onClick={() => setSyncModalOpen(true)}

@@ -4,7 +4,9 @@ import {
   SlidersHorizontal,
   Activity,
   Loader2,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
 
 function formatDateForDisplay(dateStr: string): string {
   try {
@@ -39,6 +41,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   syncing,
   hasActiveFilters,
 }) => {
+  const { signOut } = useAuth();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dateLabel = useMemo(() => formatDateForDisplay(date), [date]);
 
@@ -108,6 +111,16 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         ) : (
           <Activity className="size-4.5" />
         )}
+      </button>
+
+      {/* Logout button */}
+      <button
+        type="button"
+        onClick={signOut}
+        className="w-10 h-10 flex items-center justify-center rounded-lg text-text-secondary active:bg-background-primary transition-colors touch-manipulation"
+        aria-label="Sign out"
+      >
+        <LogOut className="size-4.5" />
       </button>
     </header>
   );
