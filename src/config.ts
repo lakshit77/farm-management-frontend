@@ -28,6 +28,13 @@ export const API_BASE_URLS: Record<Environment, string> = {
 export const USE_MOCK_DATA = false;
 
 /**
+ * Feature flag: show the Chat tab in the sidebar and bottom tab bar.
+ * Set to true when you're ready to expose chat to all users in production.
+ * When false, the tab is hidden regardless of the user's role or farm.
+ */
+export const ENABLE_CHAT = true;
+
+/**
  * Display timezone for all dates and times in the UI (e.g. notification log, last run).
  * Must be an IANA timezone name. America/New_York is used for Wellington FL and consistent ET display.
  */

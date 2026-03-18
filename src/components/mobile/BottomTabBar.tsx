@@ -1,7 +1,7 @@
 import React from "react";
-import { LayoutDashboard, BookOpen, LayoutGrid, Bell, Grid3x3 } from "lucide-react";
+import { LayoutDashboard, BookOpen, LayoutGrid, Bell, Grid3x3, MessageCircle } from "lucide-react";
 
-export type MobileTab = "overview" | "classes" | "rings" | "board" | "notifications";
+export type MobileTab = "overview" | "classes" | "rings" | "board" | "notifications" | "chat";
 
 const TABS: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
   { id: "overview", label: "Overview", icon: <LayoutDashboard className="size-5" /> },
@@ -9,27 +9,32 @@ const TABS: { id: MobileTab; label: string; icon: React.ReactNode }[] = [
   { id: "rings", label: "Rings", icon: <LayoutGrid className="size-5" /> },
   { id: "board", label: "Board", icon: <Grid3x3 className="size-5" /> },
   { id: "notifications", label: "Alerts", icon: <Bell className="size-5" /> },
+  { id: "chat", label: "Chat", icon: <MessageCircle className="size-5" /> },
 ];
 
 interface BottomTabBarProps {
   activeTab: MobileTab;
   onTabChange: (tab: MobileTab) => void;
   notificationCount?: number;
+  showChat?: boolean;
 }
 
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({
   activeTab,
   onTabChange,
   notificationCount = 0,
+  showChat = false,
 }) => {
+  const visibleTabs = TABS.filter((t) => t.id !== "chat" || showChat);
+
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-surface-card border-t border-border-card safe-area-bottom"
+      className="fixed bottom-0 left-0 right-0 z-[70] bg-surface-card border-t border-border-card safe-area-bottom"
       role="tablist"
       aria-label="Main navigation"
     >
       <div className="flex items-stretch h-14">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button

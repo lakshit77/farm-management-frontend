@@ -7,6 +7,10 @@ export type UserRole = 'admin' | 'manager' | 'employee'
 interface AuthContextValue {
   user: User | null
   role: UserRole | null
+  farmId: string | null
+  /** Per-user chat override from Supabase user_metadata.enable_chat.
+   *  true/false = explicit override; null = not set, fall back to ENABLE_CHAT in config. */
+  enableChat: boolean | null
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -16,12 +20,19 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<UserRole | null>(null)
+  const [farmId, setFarmId] = useState<string | null>(null)
+  const [enableChat, setEnableChat] = useState<boolean | null>(null)
   const [loading, setLoading] = useState(true)
 
   function applySession(session: Session | null) {
     const u = session?.user ?? null
     setUser(u)
     setRole((u?.user_metadata?.role as UserRole) ?? null)
+    setFarmId((u?.user_metadata?.farm_id as string) ?? null)
+
+    // enable_chat in metadata can be true, false, or absent (null = use config default)
+    const metaEnableChat = u?.user_metadata?.enable_chat
+    setEnableChat(typeof metaEnableChat === 'boolean' ? metaEnableChat : null)
   }
 
   useEffect(() => {
@@ -42,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, signOut }}>
+    <AuthContext.Provider value={{ user, role, farmId, enableChat, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   )

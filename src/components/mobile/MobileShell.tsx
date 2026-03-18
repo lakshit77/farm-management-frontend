@@ -9,6 +9,7 @@ import { MobileRingView } from "./MobileRingView";
 import { MobileRingBoard } from "./MobileRingBoard";
 import { MobileNotificationsTab } from "./MobileNotificationsTab";
 import { ConfirmSyncModal } from "../ConfirmSyncModal";
+import { MobileChatView } from "../../views/MobileChatView";
 import type { DashboardFilters } from "../FilterBar";
 import type { ScheduleViewData, NotificationLogItem } from "../../api";
 
@@ -30,6 +31,7 @@ interface MobileShellProps {
   loadingMoreNotifs: boolean;
   notifHasMore: boolean;
   onLoadMoreNotifs: () => void;
+  showChat?: boolean;
 }
 
 export const MobileShell: React.FC<MobileShellProps> = ({
@@ -49,10 +51,12 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   loadingMoreNotifs,
   notifHasMore,
   onLoadMoreNotifs,
+  showChat = false,
 }) => {
   const [activeTab, setActiveTab] = useState<MobileTab>("overview");
   const [filterOpen, setFilterOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [conversationOpen, setConversationOpen] = useState(false);
 
   const hasActiveFilters =
     filters.horseName !== "" ||
@@ -61,6 +65,16 @@ export const MobileShell: React.FC<MobileShellProps> = ({
 
   return (
     <div className="min-h-screen bg-background-primary flex flex-col">
+      {/* Chat takes over the full screen — rendered as a fixed overlay outside the shell */}
+      {activeTab === "chat" && (
+        <div className="fixed inset-0 z-[60] bg-white flex flex-col">
+          <MobileChatView
+            onExitChat={() => setActiveTab("overview")}
+            onConversationChange={setConversationOpen}
+          />
+        </div>
+      )}
+
       <MobileHeader
         showName={showName}
         date={date}
@@ -71,7 +85,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         hasActiveFilters={hasActiveFilters}
       />
 
-      {/* Scrollable content area — Board tab is no-scroll/no-padding */}
+      {/* Scrollable content area */}
       <main
         className={`flex-1 overflow-x-hidden min-h-0 ${
           activeTab === "board"
@@ -127,11 +141,14 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         )}
       </main>
 
-      <BottomTabBar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        notificationCount={notifications.length}
-      />
+      {!conversationOpen && (
+        <BottomTabBar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          notificationCount={notifications.length}
+          showChat={showChat}
+        />
+      )}
 
       <FilterSheet
         open={filterOpen}

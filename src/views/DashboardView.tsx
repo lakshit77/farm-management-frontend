@@ -25,6 +25,7 @@ import {
   BookOpen,
   Bell,
   LayoutGrid,
+  MessageCircle,
 } from "lucide-react";
 import { HeaderLabelContext } from "../contexts/HeaderLabelContext";
 import {
@@ -41,8 +42,11 @@ import { OverviewTab } from "../components/tabs/OverviewTab";
 import { ClassesHorsesTab } from "../components/tabs/ClassesHorsesTab";
 import { RingHorsesTab } from "../components/tabs/RingHorsesTab";
 import { NotificationsTab } from "../components/tabs/NotificationsTab";
+import { ChatView } from "./ChatView";
 import { useIsMobile } from "../hooks/useIsMobile";
 import { MobileShell } from "../components/mobile/MobileShell";
+import { useAuth } from "../contexts/AuthContext";
+import { ENABLE_CHAT } from "../config";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -59,8 +63,8 @@ function getTodayStr(): string {
 const NOTIF_INITIAL_LIMIT = 200;
 const NOTIF_PAGE_SIZE = 50;
 
-/** The four dashboard tabs. */
-type DashboardTab = "overview" | "classes" | "rings" | "notifications";
+/** The five dashboard tabs. */
+type DashboardTab = "overview" | "classes" | "rings" | "notifications" | "chat";
 
 const TABS: { id: DashboardTab; label: string; icon: React.ReactNode }[] = [
   {
@@ -82,6 +86,11 @@ const TABS: { id: DashboardTab; label: string; icon: React.ReactNode }[] = [
     id: "notifications",
     label: "Notifications",
     icon: <Bell className="size-4" aria-hidden />,
+  },
+  {
+    id: "chat",
+    label: "Chat",
+    icon: <MessageCircle className="size-4" aria-hidden />,
   },
 ];
 
@@ -164,6 +173,11 @@ function filterNotifications(
  * unified Horse/Class filter applied across all tabs.
  */
 export function DashboardView(): React.ReactElement {
+  const { role, farmId, enableChat } = useAuth();
+  // Per-user metadata takes precedence; fall back to the global config flag.
+  const chatFeatureOn = enableChat !== null ? enableChat : ENABLE_CHAT;
+  const chatEnabled = chatFeatureOn && Boolean(role && farmId);
+
   const [date, setDate] = useState<string>(getTodayStr);
   const [activeTab, setActiveTab] = useState<DashboardTab>("overview");
   const [filters, setFilters] = useState<DashboardFilters>({
@@ -312,6 +326,8 @@ export function DashboardView(): React.ReactElement {
 
   const isMobile = useIsMobile();
 
+  const visibleTabs = TABS.filter((t) => t.id !== "chat" || chatEnabled);
+
   if (isMobile) {
     return (
       <MobileShell
@@ -332,6 +348,7 @@ export function DashboardView(): React.ReactElement {
         loadingMoreNotifs={loadingMoreNotifs}
         notifHasMore={notifHasMore}
         onLoadMoreNotifs={handleLoadMoreNotifications}
+        showChat={chatEnabled}
       />
     );
   }
@@ -396,7 +413,7 @@ export function DashboardView(): React.ReactElement {
             role="tablist"
             aria-label="Dashboard sections"
           >
-            {TABS.map((tab) => {
+            {visibleTabs.map((tab) => {
               const isActive = activeTab === tab.id;
               return (
                 <button
@@ -429,51 +446,60 @@ export function DashboardView(): React.ReactElement {
         </div>
       </div>
 
-      {/* ── Main content area (full width for Ring & Horses tab) ── */}
+      {/* ── Main content area ── */}
       <div
         className={
-          activeTab === "rings"
+          activeTab === "chat"
+            ? "w-full px-4 lg:px-6 py-4 min-w-0 overflow-hidden"
+            : activeTab === "rings"
             ? "w-full px-6 lg:px-8 py-6 min-w-0 overflow-x-hidden"
             : "max-w-6xl mx-auto px-6 lg:px-8 py-6 min-w-0 overflow-x-hidden"
         }
       >
-        {/* Error */}
-        {error && (
-          <div className="mb-6 rounded-card border border-red-200 bg-red-50 p-4 flex items-center gap-3">
-            <AlertCircle className="size-5 text-red-600 shrink-0" aria-hidden />
-            <p className="font-body text-sm text-red-800">{error}</p>
-          </div>
-        )}
+        {/* Chat tab renders independently of schedule loading state */}
+        {activeTab === "chat" && <ChatView />}
 
-        {/* Full-page loading skeleton */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-24">
-            <Loader2 className="size-10 animate-spin text-accent-green mb-4" aria-hidden />
-            <p className="font-body text-text-secondary">Loading show data…</p>
-          </div>
-        )}
+        {activeTab !== "chat" && (
+          <>
+            {/* Error */}
+            {error && (
+              <div className="mb-6 rounded-card border border-red-200 bg-red-50 p-4 flex items-center gap-3">
+                <AlertCircle className="size-5 text-red-600 shrink-0" aria-hidden />
+                <p className="font-body text-sm text-red-800">{error}</p>
+              </div>
+            )}
 
-        {/* Tabs — rendered immediately from memory; no additional loading */}
-        {!loading && (
-          <div role="tabpanel">
-            {activeTab === "overview" && (
-              <OverviewTab data={scheduleData} filters={filters} />
+            {/* Full-page loading skeleton */}
+            {loading && (
+              <div className="flex flex-col items-center justify-center py-24">
+                <Loader2 className="size-10 animate-spin text-accent-green mb-4" aria-hidden />
+                <p className="font-body text-text-secondary">Loading show data…</p>
+              </div>
             )}
-            {activeTab === "classes" && (
-              <ClassesHorsesTab data={scheduleData} filters={filters} />
+
+            {/* Tabs — rendered immediately from memory; no additional loading */}
+            {!loading && (
+              <div role="tabpanel">
+                {activeTab === "overview" && (
+                  <OverviewTab data={scheduleData} filters={filters} />
+                )}
+                {activeTab === "classes" && (
+                  <ClassesHorsesTab data={scheduleData} filters={filters} />
+                )}
+                {activeTab === "rings" && (
+                  <RingHorsesTab data={scheduleData} filters={filters} />
+                )}
+                {activeTab === "notifications" && (
+                  <NotificationsTab
+                    notifications={filteredNotifications}
+                    loadingMore={loadingMoreNotifs}
+                    hasMore={notifHasMore}
+                    onLoadMore={handleLoadMoreNotifications}
+                  />
+                )}
+              </div>
             )}
-            {activeTab === "rings" && (
-              <RingHorsesTab data={scheduleData} filters={filters} />
-            )}
-            {activeTab === "notifications" && (
-              <NotificationsTab
-                notifications={filteredNotifications}
-                loadingMore={loadingMoreNotifs}
-                hasMore={notifHasMore}
-                onLoadMore={handleLoadMoreNotifications}
-              />
-            )}
-          </div>
+          </>
         )}
       </div>
     </div>

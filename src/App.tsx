@@ -2,6 +2,7 @@ import React, { useState, useCallback } from "react";
 import { Activity, Loader2, LogOut } from "lucide-react";
 import { HeaderLabelContext } from "./contexts/HeaderLabelContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { ChatProvider } from "./contexts/ChatContext";
 import { DashboardView } from "./views";
 import { CLASS_MONITOR_API, getApiHeaders } from "./api";
 import { DASHBOARD_REFRESH_EVENT } from "./constants";
@@ -55,7 +56,9 @@ function AppInner(): React.ReactElement {
 function App(): React.ReactElement {
   return (
     <AuthProvider>
-      <AppInner />
+      <ChatProvider>
+        <AppInner />
+      </ChatProvider>
     </AuthProvider>
   );
 }

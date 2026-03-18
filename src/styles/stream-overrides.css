@@ -1,0 +1,330 @@
+/**
+ * Stream Chat CSS overrides — deep theming for a WhatsApp/Telegram-grade UI.
+ *
+ * Import AFTER stream-chat-react/dist/css/v2/index.css so these rules
+ * take precedence. All custom message rendering is handled by our React
+ * components (ChatMessageBubble, ChatInput, ChatHeader); these overrides
+ * handle the Stream SDK chrome that wraps our components.
+ */
+
+/* ── Design tokens ──────────────────────────────────────────────────────────── */
+
+:root {
+  --str-chat__primary-color: #5c7b5c;
+  --str-chat__active-primary-color: #4f6d4f;
+  --str-chat__primary-color-low-emphasis: rgba(92, 123, 92, 0.10);
+
+  --str-chat__background-color: #f7f7f7;
+  --str-chat__secondary-background-color: #ffffff;
+  --str-chat__message-list-background-color: #f7f7f7;
+
+  --str-chat__text-color: #333333;
+  --str-chat__secondary-text-color: #6b6b6b;
+  --str-chat__disabled-color: #9e9e9e;
+
+  --str-chat__border-radius-circle: 9999px;
+  --str-chat__font-family: "Inter", "Open Sans", sans-serif;
+  --str-chat__font-size-sm: 0.8125rem;
+  --str-chat__font-size-md: 0.875rem;
+
+  /* Message bubbles — overridden by our custom component, but set as fallback */
+  --str-chat__own-message-bubble-background-color: #5c7b5c;
+  --str-chat__own-message-text-color: #ffffff;
+  --str-chat__message-bubble-background-color: #ffffff;
+  --str-chat__message-bubble-border-radius: 1rem;
+
+  --str-chat__message-input-background-color: #ffffff;
+  --str-chat__message-input-border-color: #e8e8e8;
+  --str-chat__message-input-border-radius: 1.5rem;
+}
+
+/* ── Message list container ─────────────────────────────────────────────────── */
+
+.str-chat__list {
+  background-color: transparent;
+  padding: 8px 0;
+}
+
+/* Remove default padding that conflicts with our bubble layout */
+.str-chat__li {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Message wrapper — remove Stream's default margin/padding */
+.str-chat__message-simple,
+.str-chat__message {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Hide Stream's default avatar in messages (we render our own) */
+.str-chat__message-simple .str-chat__avatar,
+.str-chat__message .str-chat__avatar {
+  display: none !important;
+}
+
+/* Hide Stream's default sender name (we render our own) */
+.str-chat__message-simple-name,
+.str-chat__message-name {
+  display: none !important;
+}
+
+/* Hide Stream's default timestamp (we render our own inside bubbles) */
+.str-chat__message-simple-timestamp,
+.str-chat__message-timestamp {
+  display: none !important;
+}
+
+/* Hide Stream's default message status (we render our own tick) */
+.str-chat__message-simple-status,
+.str-chat__message-status {
+  display: none !important;
+}
+
+/* ── Date separator ─────────────────────────────────────────────────────────── */
+
+.str-chat__date-separator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  gap: 0;
+}
+
+.str-chat__date-separator-line {
+  display: none !important;
+}
+
+.str-chat__date-separator-date {
+  background-color: rgba(0, 0, 0, 0.08);
+  color: #6b6b6b;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: "Inter", "Open Sans", sans-serif;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Typing indicator ───────────────────────────────────────────────────────── */
+
+.str-chat__typing-indicator {
+  padding: 4px 16px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.str-chat__typing-indicator__dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 1rem;
+  padding: 8px 14px;
+}
+
+.str-chat__typing-indicator__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #9e9e9e;
+  animation: str-chat-typing-bounce 1.4s infinite ease-in-out;
+}
+
+.str-chat__typing-indicator__dot:nth-child(1) { animation-delay: 0s; }
+.str-chat__typing-indicator__dot:nth-child(2) { animation-delay: 0.2s; }
+.str-chat__typing-indicator__dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes str-chat-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.str-chat__typing-indicator__users {
+  font-size: 11px;
+  color: #6b6b6b;
+  font-family: "Inter", "Open Sans", sans-serif;
+}
+
+/* ── Scroll-to-bottom button ────────────────────────────────────────────────── */
+
+.str-chat__jump-to-latest-message {
+  bottom: 80px !important;
+  right: 16px !important;
+}
+
+.str-chat__message-notification {
+  background-color: #5c7b5c;
+  color: #ffffff;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-family: "Inter", "Open Sans", sans-serif;
+  padding: 6px 14px;
+  box-shadow: 0 2px 8px rgba(92, 123, 92, 0.35);
+  border: none;
+}
+
+/* ── Message input area (Stream's wrapper around our ChatInput) ─────────────── */
+
+/* Strip ALL padding/margin from Stream's wrapper — our ChatInput owns its own height */
+.str-chat__message-input {
+  background-color: #ffffff;
+  border-top: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+}
+
+.str-chat__message-input-inner {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Also strip the form wrapper Stream adds */
+.str-chat__message-input form,
+.str-chat__message-input .str-chat__message-input--textarea-wrapper {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ── Channel header (Stream's wrapper around our ChatHeader) ────────────────── */
+
+.str-chat__channel-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+
+/* ── Thread panel ───────────────────────────────────────────────────────────── */
+
+.str-chat__thread {
+  background-color: #ffffff;
+  border-left: 1px solid #e8e8e8;
+}
+
+.str-chat__thread-header {
+  background-color: #ffffff;
+  border-bottom: 1px solid #e8e8e8;
+  padding: 12px 16px;
+}
+
+.str-chat__thread-header-details {
+  font-family: "Inter", "Open Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333333;
+}
+
+/* ── Reactions ──────────────────────────────────────────────────────────────── */
+
+.str-chat__message-reactions-list-item--selected {
+  background-color: rgba(92, 123, 92, 0.12);
+  border-color: #5c7b5c;
+}
+
+.str-chat__reaction-selector {
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 9999px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+/* ── Message actions menu ───────────────────────────────────────────────────── */
+
+.str-chat__message-actions-box {
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+
+.str-chat__message-actions-list-item-button {
+  font-family: "Inter", "Open Sans", sans-serif;
+  font-size: 14px;
+  color: #333333;
+  padding: 10px 16px;
+  transition: background-color 0.15s;
+}
+
+.str-chat__message-actions-list-item-button:hover {
+  background-color: #f7f7f7;
+}
+
+/* Delete action — red */
+.str-chat__message-actions-list-item-button--delete {
+  color: #ef4444;
+}
+
+/* ── Unread messages divider ────────────────────────────────────────────────── */
+
+.str-chat__unread-messages-separator {
+  background-color: rgba(92, 123, 92, 0.10);
+  color: #5c7b5c;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: "Inter", "Open Sans", sans-serif;
+  text-align: center;
+  padding: 4px 0;
+  margin: 8px 0;
+}
+
+/* ── Loading indicator ──────────────────────────────────────────────────────── */
+
+.str-chat__loading-indicator {
+  color: #5c7b5c;
+}
+
+/* ── Empty channel state ────────────────────────────────────────────────────── */
+
+.str-chat__empty-channel {
+  background-color: #f7f7f7;
+}
+
+/* ── Window (main chat container) ───────────────────────────────────────────── */
+
+.str-chat__main-panel {
+  background-color: #f7f7f7;
+}
+
+.str-chat__container {
+  background-color: #f7f7f7;
+}
+
+/* Ensure message list fills available height properly */
+.str-chat__virtual-list,
+.str-chat__message-list-scroll {
+  background-color: transparent;
+}
+
+/* ── Mobile keyboard handling ───────────────────────────────────────────────── */
+
+@supports (height: 100dvh) {
+  .str-chat {
+    height: 100%;
+  }
+}
+
+/* ── Scrollbar styling ──────────────────────────────────────────────────────── */
+
+.str-chat__list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.str-chat__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.str-chat__list::-webkit-scrollbar-thumb {
+  background-color: #e8e8e8;
+  border-radius: 9999px;
+}
+
+.str-chat__list::-webkit-scrollbar-thumb:hover {
+  background-color: #d0d0d0;
+}
