@@ -40,6 +40,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Raise the precache limit to 5 MB to accommodate vendor chunks
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -63,4 +65,22 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // React core — changes rarely, long cache life
+          "vendor-react": ["react", "react-dom"],
+          // Stream Chat SDK — largest dependency, isolated into its own chunk
+          "vendor-stream": ["stream-chat", "stream-chat-react"],
+          // Supabase auth
+          "vendor-supabase": ["@supabase/supabase-js"],
+          // Emoji picker
+          "vendor-emoji": ["@emoji-mart/react", "@emoji-mart/data"],
+          // Lucide icons
+          "vendor-lucide": ["lucide-react"],
+        },
+      },
+    },
+  },
 });
