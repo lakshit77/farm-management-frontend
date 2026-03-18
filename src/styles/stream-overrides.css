@@ -169,18 +169,20 @@
 
 /* ── Message input area (Stream's wrapper around our ChatInput) ─────────────── */
 
-/* Strip ALL padding/margin from Stream's wrapper — our ChatInput owns its own height */
+/* Strip ALL padding/margin/height from Stream's wrapper — our ChatInput owns its own sizing */
 .str-chat__message-input {
   background-color: #ffffff;
   border-top: none !important;
   padding: 0 !important;
   margin: 0 !important;
   min-height: 0 !important;
+  height: auto !important;
 }
 
 .str-chat__message-input-inner {
   padding: 0 !important;
   margin: 0 !important;
+  height: auto !important;
 }
 
 /* Also strip the form wrapper Stream adds */
@@ -188,6 +190,7 @@
 .str-chat__message-input .str-chat__message-input--textarea-wrapper {
   padding: 0 !important;
   margin: 0 !important;
+  height: auto !important;
 }
 
 /* ── Channel header (Stream's wrapper around our ChatHeader) ────────────────── */

@@ -89,7 +89,7 @@ export function ChatInput() {
   }
 
   return (
-    <div className="relative flex items-center gap-2 px-3 h-[60px] bg-white border-t border-border-card safe-area-bottom">
+    <div className="relative flex items-center gap-2 px-3 bg-white border-t border-border-card" style={{ paddingTop: "10px", paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))" }}>
       {/* Emoji picker popup */}
       {showPicker && (
         <div
