@@ -30,9 +30,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRole((u?.user_metadata?.role as UserRole) ?? null)
     setFarmId((u?.user_metadata?.farm_id as string) ?? null)
 
-    // enable_chat in metadata can be true, false, or absent (null = use config default)
+    // enable_chat in metadata can be boolean true/false, string "true"/"false", or absent.
+    // Supabase sometimes stores JSON booleans as strings depending on how they were set.
     const metaEnableChat = u?.user_metadata?.enable_chat
-    setEnableChat(typeof metaEnableChat === 'boolean' ? metaEnableChat : null)
+    if (metaEnableChat === true || metaEnableChat === 'true') {
+      setEnableChat(true)
+    } else if (metaEnableChat === false || metaEnableChat === 'false') {
+      setEnableChat(false)
+    } else {
+      setEnableChat(null) // not set — fall back to ENABLE_CHAT in config
+    }
   }
 
   useEffect(() => {
