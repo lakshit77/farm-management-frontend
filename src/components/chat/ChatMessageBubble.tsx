@@ -54,25 +54,39 @@ export function ChatMessageBubble() {
     );
   }
 
-  // Bot messages — centered warm tint
+  // Bot messages — same layout as other users, warm tint colors
   if (isBot) {
     return (
-      <div className="flex justify-start px-4 py-0.5">
-        <div className="flex items-start gap-2 max-w-[80%]">
-          <div className="shrink-0 w-7 h-7 rounded-full bg-warm-orange-brown/20 flex items-center justify-center mt-0.5">
-            <Bot className="size-3.5 text-warm-rust" />
+      <div className={`flex justify-start px-4 ${isLast ? "pb-2" : "pb-0.5"}`}>
+        <div className="flex items-end gap-2 max-w-[78%]">
+          {/* Icon at bottom-left, same position as user avatar — only on last in group */}
+          <div className="shrink-0 w-7 h-7 mb-0.5">
+            {isLast && (
+              <div className="w-7 h-7 rounded-full bg-warm-orange-brown/20 flex items-center justify-center">
+                <Bot className="size-3.5 text-warm-rust" />
+              </div>
+            )}
           </div>
-          <div>
-            {isFirst && (
-              <p className="text-[11px] font-semibold text-warm-rust mb-0.5 ml-1">
+
+          <div className="min-w-0">
+            <div
+              className={`bg-semantic-warning-bg border border-warm-orange-brown/20 px-3.5 py-2.5 shadow-sm ${
+                isFirst && isLast
+                  ? "rounded-2xl rounded-bl-md"
+                  : isFirst
+                  ? "rounded-2xl rounded-bl-sm"
+                  : isLast
+                  ? "rounded-2xl rounded-tl-sm rounded-bl-md"
+                  : "rounded-lg rounded-l-sm"
+              }`}
+            >
+              <p className="text-[11px] font-semibold text-warm-rust mb-1">
                 {senderName}
               </p>
-            )}
-            <div className="bg-semantic-warning-bg border border-warm-orange-brown/20 rounded-2xl rounded-tl-md px-3.5 py-2.5">
               <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words">
                 {text}
               </p>
-              <p className="text-[10px] text-warm-rust/60 mt-1 text-right">{time}</p>
+              <p className="text-[10px] text-warm-rust/60 mt-1">{time}</p>
             </div>
           </div>
         </div>
@@ -129,11 +143,6 @@ export function ChatMessageBubble() {
         </div>
 
         <div className="min-w-0">
-          {isFirst && (
-            <p className="text-[11px] font-semibold text-accent-green-dark mb-0.5 ml-1">
-              {senderName}
-            </p>
-          )}
           <div
             className={`bg-white border border-border-card px-3.5 py-2.5 shadow-sm ${
               isFirst && isLast
@@ -145,6 +154,10 @@ export function ChatMessageBubble() {
                 : "rounded-lg rounded-l-sm"
             }`}
           >
+            {/* Sender name inside the bubble — always visible, like WhatsApp */}
+            <p className="text-[11px] font-semibold text-accent-green-dark mb-1">
+              {senderName}
+            </p>
             <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words">
               {text}
             </p>
