@@ -13,6 +13,15 @@
     line-height: 1.5;
     overflow-x: hidden;
   }
+
+  /* Prevent iOS Safari from auto-zooming when focusing any input/textarea.
+     iOS zooms in when font-size < 16px — setting it to 16px here stops that.
+     Visual size is controlled separately via Tailwind classes on each element. */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 /* Safe area insets for notched devices (e.g. iPhone) */
