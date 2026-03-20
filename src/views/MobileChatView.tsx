@@ -15,7 +15,6 @@ import {
   MessageList,
   MessageInput,
   Window,
-  Thread,
 } from "stream-chat-react";
 import { Channel as StreamChannel } from "stream-chat";
 import { Loader2, MessageCircle } from "lucide-react";
@@ -23,6 +22,7 @@ import { Loader2, MessageCircle } from "lucide-react";
 import { useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
 import { ChatMessageBubble } from "../components/chat/ChatMessageBubble";
+import { ChatInput } from "../components/chat/ChatInput";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { ChatChannelListItem, type ChannelEntry, type ChannelKey } from "../components/chat/ChatChannelList";
 
@@ -102,6 +102,7 @@ function ConversationScreen({ entry, channel, onBack }: ConversationScreenProps)
       <Channel
         channel={channel}
         Message={ChatMessageBubble}
+        Input={ChatInput}
       >
         <Window>
           {/* Custom header with back button */}
@@ -111,14 +112,13 @@ function ConversationScreen({ entry, channel, onBack }: ConversationScreenProps)
           <div className="flex-1 overflow-hidden chat-bg">
             <MessageList
               disableDateSeparator={false}
-              messageActions={["delete", "flag", "react"]}
+              messageActions={[]}
             />
           </div>
 
           {/* Input bar */}
-          <MessageInput />
+          <MessageInput Input={ChatInput} />
         </Window>
-        <Thread />
       </Channel>
     </div>
   );

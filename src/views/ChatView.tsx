@@ -19,13 +19,13 @@ import {
   MessageList,
   MessageInput,
   Window,
-  Thread,
 } from "stream-chat-react";
 import { Loader2, MessageCircle, MessageSquare } from "lucide-react";
 
 import { useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
 import { ChatMessageBubble } from "../components/chat/ChatMessageBubble";
+import { ChatInput } from "../components/chat/ChatInput";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { ChatChannelListItem, type ChannelEntry, type ChannelKey } from "../components/chat/ChatChannelList";
 
@@ -171,18 +171,18 @@ export function ChatView(): React.ReactElement {
           <Channel
             channel={activeChannel}
             Message={ChatMessageBubble}
+            Input={ChatInput}
           >
             <Window>
               <ChatHeader channelKey={activeEntry.key} />
               <div className="flex-1 overflow-hidden chat-bg">
                 <MessageList
                   disableDateSeparator={false}
-                  messageActions={["delete", "flag", "react"]}
+                  messageActions={[]}
                 />
               </div>
-              <MessageInput />
+              <MessageInput Input={ChatInput} />
             </Window>
-            <Thread />
           </Channel>
         ) : (
           <NoConversationPlaceholder />

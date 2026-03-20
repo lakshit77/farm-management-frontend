@@ -97,21 +97,10 @@ function AppShell(): React.ReactElement {
     }
   }, [triggerDashboardRefresh]);
 
-  if (isMobile) {
-    return (
-      <HeaderLabelContext.Provider
-        value={{
-          headerLabel,
-          setHeaderLabel,
-          classMonitoringLastRun,
-          setClassMonitoringLastRun,
-        }}
-      >
-        <DashboardView />
-      </HeaderLabelContext.Provider>
-    );
-  }
-
+  // DashboardView is always rendered at the same tree position regardless of
+  // isMobile, so its internal state (active tab, etc.) is never reset when the
+  // viewport crosses the breakpoint. The desktop chrome (header, sync modal) is
+  // conditionally shown around it.
   return (
     <HeaderLabelContext.Provider
       value={{
@@ -121,75 +110,84 @@ function AppShell(): React.ReactElement {
         setClassMonitoringLastRun,
       }}
     >
-      <div className="min-h-screen bg-background-primary flex flex-col min-w-0">
-        <header className="h-14 min-h-14 flex items-center gap-3 px-6 bg-surface-card border-b border-border-card shadow-card shrink-0 safe-area-top">
-          <img
-            src="/favicon.svg"
-            alt=""
-            className="w-7 h-7 rounded-md shrink-0"
-            width={28}
-            height={28}
-            aria-hidden
-          />
-          <span className="font-heading text-lg font-bold text-accent-green-dark truncate min-w-0">
-            ShowGroundsLive
-          </span>
-          {headerLabel && (
-            <>
-              <span className="text-border-card mx-1 shrink-0">/</span>
-              <span className="font-body text-sm font-medium text-warm-orange-brown truncate min-w-0">
-                {headerLabel}
-              </span>
-            </>
-          )}
+      <div className={!isMobile ? "min-h-screen bg-background-primary flex flex-col min-w-0" : undefined}>
+        {/* Desktop-only top header */}
+        {!isMobile && (
+          <header className="h-14 min-h-14 flex items-center gap-3 px-6 bg-surface-card border-b border-border-card shadow-card shrink-0 safe-area-top">
+            <img
+              src="/favicon.svg"
+              alt=""
+              className="w-7 h-7 rounded-md shrink-0"
+              width={28}
+              height={28}
+              aria-hidden
+            />
+            <span className="font-heading text-lg font-bold text-accent-green-dark truncate min-w-0">
+              ShowGroundsLive
+            </span>
+            {headerLabel && (
+              <>
+                <span className="text-border-card mx-1 shrink-0">/</span>
+                <span className="font-body text-sm font-medium text-warm-orange-brown truncate min-w-0">
+                  {headerLabel}
+                </span>
+              </>
+            )}
 
-          <div className="ml-auto flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={signOut}
-              title="Sign out"
-              aria-label="Sign out"
-              className="inline-flex items-center justify-center h-9 w-9 font-body text-sm text-text-secondary bg-surface-card border border-border-card hover:bg-background-primary hover:text-warm-rust rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
-            >
-              <LogOut className="size-3.5" aria-hidden />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSyncModalOpen(true)}
-              disabled={classMonitorLoading}
-              title={classMonitoringLastRun ? `Last run: ${classMonitoringLastRun}` : "Check active classes for status changes and results"}
-              aria-label="Monitor classes: check for class updates and results"
-              className="inline-flex items-center justify-center gap-2 h-9 font-body text-sm font-medium text-accent-green-dark bg-surface-card border border-border-card hover:bg-background-primary disabled:opacity-50 rounded-lg px-3.5 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
-            >
-              {classMonitorLoading ? (
-                <Loader2 className="size-3.5 animate-spin" aria-hidden />
-              ) : (
-                <Activity className="size-3.5" aria-hidden />
-              )}
-              <span className="inline-flex flex-col items-start">
-                <span>Sync Data</span>
-                {classMonitoringLastRun && (
-                  <span className="text-xs font-normal text-text-secondary">
-                    Last run: {trimLastRunForDisplay(classMonitoringLastRun) ?? classMonitoringLastRun}
-                  </span>
+            <div className="ml-auto flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={signOut}
+                title="Sign out"
+                aria-label="Sign out"
+                className="inline-flex items-center justify-center h-9 w-9 font-body text-sm text-text-secondary bg-surface-card border border-border-card hover:bg-background-primary hover:text-warm-rust rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
+              >
+                <LogOut className="size-3.5" aria-hidden />
+              </button>
+              <button
+                type="button"
+                onClick={() => setSyncModalOpen(true)}
+                disabled={classMonitorLoading}
+                title={classMonitoringLastRun ? `Last run: ${classMonitoringLastRun}` : "Check active classes for status changes and results"}
+                aria-label="Monitor classes: check for class updates and results"
+                className="inline-flex items-center justify-center gap-2 h-9 font-body text-sm font-medium text-accent-green-dark bg-surface-card border border-border-card hover:bg-background-primary disabled:opacity-50 rounded-lg px-3.5 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
+              >
+                {classMonitorLoading ? (
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                ) : (
+                  <Activity className="size-3.5" aria-hidden />
                 )}
-              </span>
-            </button>
-          </div>
-        </header>
+                <span className="inline-flex flex-col items-start">
+                  <span>Sync Data</span>
+                  {classMonitoringLastRun && (
+                    <span className="text-xs font-normal text-text-secondary">
+                      Last run: {trimLastRunForDisplay(classMonitoringLastRun) ?? classMonitoringLastRun}
+                    </span>
+                  )}
+                </span>
+              </button>
+            </div>
+          </header>
+        )}
 
-        <main className="flex-1 min-w-0 min-h-0" id="main-content" role="main">
+        {/* DashboardView is always at the same tree position to prevent
+            remounts (and tab-state resets) when the viewport breakpoint changes.
+            On desktop it fills the flex column; on mobile it is the only child. */}
+        <main className={!isMobile ? "flex-1 min-w-0 min-h-0" : undefined} id="main-content" role="main">
           <DashboardView />
         </main>
 
-        <ConfirmSyncModal
-          open={syncModalOpen}
-          onCancel={() => setSyncModalOpen(false)}
-          onConfirm={() => {
-            setSyncModalOpen(false);
-            handleClassMonitor();
-          }}
-        />
+        {/* Desktop-only sync confirm modal */}
+        {!isMobile && (
+          <ConfirmSyncModal
+            open={syncModalOpen}
+            onCancel={() => setSyncModalOpen(false)}
+            onConfirm={() => {
+              setSyncModalOpen(false);
+              handleClassMonitor();
+            }}
+          />
+        )}
       </div>
     </HeaderLabelContext.Provider>
   );

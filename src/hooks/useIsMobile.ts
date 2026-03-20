@@ -12,7 +12,9 @@ export function useIsMobile(): boolean {
     const mql = window.matchMedia(MOBILE_BREAKPOINT);
     const handler = (e: MediaQueryListEvent): void => setIsMobile(e.matches);
     mql.addEventListener("change", handler);
-    setIsMobile(mql.matches);
+    // No redundant setIsMobile here — the useState initializer already reads
+    // the correct value synchronously, so a second set would cause an
+    // unnecessary re-render that can remount children and reset their state.
     return () => mql.removeEventListener("change", handler);
   }, []);
 

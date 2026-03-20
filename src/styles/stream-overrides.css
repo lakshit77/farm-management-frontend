@@ -49,6 +49,8 @@
 .str-chat__li {
   padding: 0 !important;
   margin: 0 !important;
+  /* Allow hover action bars to overflow the list item bounds */
+  overflow: visible !important;
 }
 
 /* Message wrapper — remove Stream's default margin/padding */
@@ -303,7 +305,42 @@
 .str-chat__virtual-list,
 .str-chat__message-list-scroll {
   background-color: transparent;
+  /* Allow hover action bars to overflow horizontally without adding scrollbar */
+  overflow-x: visible !important;
 }
+
+/* ── Quoted-message block inside bubbles ────────────────────────────────────── */
+
+/*
+ * When Stream sends a reply, the message.quoted_message field is populated.
+ * Our QuotedPreview component renders it with a left-border accent.
+ * These rules ensure a subtle tinted background for the "others" variant.
+ */
+.quoted-reply-block--other {
+  background-color: rgba(92, 123, 92, 0.06);
+  border-radius: 0 4px 4px 0;
+}
+
+/* ── Reaction pills ─────────────────────────────────────────────────────────── */
+
+/*
+ * Reaction pill buttons are rendered entirely via Tailwind utility classes in
+ * ReactionsRow. No extra CSS needed — just ensure Stream's default reaction
+ * list (if ever rendered) is hidden since we handle it ourselves.
+ */
+.str-chat__message-reactions-container,
+.str-chat__message-reactions {
+  display: none !important;
+}
+
+/* ── Quick-react flyout animation ───────────────────────────────────────────── */
+
+@keyframes chat-reactions-pop {
+  0% { opacity: 0; transform: scale(0.8) translateY(4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Applied to the quick-reactions flyout via JS (no extra class needed — handled inline) */
 
 /* ── Mobile keyboard handling ───────────────────────────────────────────────── */
 
@@ -311,6 +348,126 @@
   .str-chat {
     height: 100%;
   }
+}
+
+/* ── renderText output — strip default <p> margins inside bubbles ───────────── */
+
+/*
+ * Stream's renderText() wraps output in a <p> element. Inside our tight
+ * bubble padding we don't want extra block-level spacing.
+ */
+.chat-message-text p {
+  margin: 0;
+  padding: 0;
+}
+
+.chat-message-text p + p {
+  margin-top: 0.25rem;
+}
+
+/* Inline code spans inside messages */
+.chat-message-text code {
+  font-size: 0.8125em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background-color: rgba(0,0,0,0.08);
+  font-family: "Menlo", "Consolas", monospace;
+}
+
+/* ── @Mention suggestion list (TextareaComposer) ────────────────────────────── */
+
+/*
+ * .chat-input-composer-container is the containerClassName we pass to
+ * TextareaComposer. It wraps both the <textarea> and the suggestion list.
+ * position:relative makes it the anchor for the absolutely-placed list.
+ * overflow:visible lets the list float outside the rounded pill boundary.
+ */
+.chat-input-composer-container {
+  flex: 1;
+  position: relative;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+}
+
+/*
+ * The suggestion list container floats above the input.
+ * Positioned relative to .chat-input-composer-container.
+ */
+.chat-input-composer-container .str-chat__suggestion-list-container {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: -16px; /* compensate for pill's px-4 so list aligns to pill edge */
+  right: -16px;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 220px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+  padding: 4px 0;
+  z-index: 100;
+}
+
+/* Single suggestion row */
+.str-chat__suggestion-list-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.12s;
+}
+
+/* UserItem inner layout */
+.str-chat__user-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  width: 100%;
+  font-family: "Inter", "Open Sans", sans-serif;
+  font-size: 13px;
+  color: #333333;
+}
+
+.str-chat__suggestion-list-item:hover .str-chat__user-item,
+.str-chat__suggestion-list-item--focused .str-chat__user-item {
+  background-color: rgba(92, 123, 92, 0.10);
+}
+
+/* Avatar inside suggestion row */
+.str-chat__suggestion-list-item .str-chat__avatar,
+.str-chat__user-item .str-chat__avatar {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(92, 123, 92, 0.15) !important;
+  color: #4f6d4f !important;
+}
+
+/* Bold matched token inside suggestion name */
+.str-chat__user-item--name strong,
+.str-chat__suggestion-list-item strong {
+  color: #4f6d4f;
+  font-weight: 700;
+}
+
+/* Remove the default <ul> list styles */
+.str-chat__suggestion-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 /* ── Scrollbar styling ──────────────────────────────────────────────────────── */

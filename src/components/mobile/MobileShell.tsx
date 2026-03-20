@@ -53,7 +53,9 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   onLoadMoreNotifs,
   showChat = false,
 }) => {
-  const [activeTab, setActiveTab] = useState<MobileTab>("overview");
+  // Start on "chat" when the chat feature is enabled so users can begin
+  // chatting immediately without waiting for overview data to load.
+  const [activeTab, setActiveTab] = useState<MobileTab>(showChat ? "chat" : "overview");
   const [filterOpen, setFilterOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
