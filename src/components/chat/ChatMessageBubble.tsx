@@ -346,7 +346,10 @@ export function ChatMessageBubble(): React.ReactElement | null {
   const handleReaction = useReactionHandler(message as unknown as LocalMessage);
   const messageComposer = useMessageComposer();
 
-  // Desktop hover state
+  // True on touch-primary devices — hover bar is hidden, mobile gestures used instead.
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(hover: none)").matches;
+
+  // Desktop hover state (unused on touch devices)
   const [hovered, setHovered] = useState(false);
   const [showQuickReactions, setShowQuickReactions] = useState(false);
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -543,8 +546,8 @@ export function ChatMessageBubble(): React.ReactElement | null {
               <ReactionsRow reactions={reactions} ownReactionTypes={ownReactionTypes} onReact={onReact} isOwn={false} />
             </div>
 
-            {/* Desktop action bar */}
-            {hovered && (
+            {/* Desktop action bar — hidden on touch devices */}
+            {!isTouch && hovered && (
               <HoverActionBar
                 isOwn={false}
                 onReact={onReact}
@@ -593,8 +596,8 @@ export function ChatMessageBubble(): React.ReactElement | null {
               </div>
             )}
 
-            {/* Desktop action bar — left of own bubble */}
-            {hovered && (
+            {/* Desktop action bar — hidden on touch devices */}
+            {!isTouch && hovered && (
               <HoverActionBar
                 isOwn={true}
                 onReact={onReact}
@@ -690,8 +693,8 @@ export function ChatMessageBubble(): React.ReactElement | null {
             <ReactionsRow reactions={reactions} ownReactionTypes={ownReactionTypes} onReact={onReact} isOwn={false} />
           </div>
 
-          {/* Desktop action bar */}
-          {hovered && (
+          {/* Desktop action bar — hidden on touch devices */}
+          {!isTouch && hovered && (
             <HoverActionBar
               isOwn={false}
               onReact={onReact}
