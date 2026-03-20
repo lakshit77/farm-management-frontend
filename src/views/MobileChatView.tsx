@@ -23,7 +23,6 @@ import { Loader2, MessageCircle } from "lucide-react";
 import { useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
 import { ChatMessageBubble } from "../components/chat/ChatMessageBubble";
-import { ChatInput } from "../components/chat/ChatInput";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { ChatChannelListItem, type ChannelEntry, type ChannelKey } from "../components/chat/ChatChannelList";
 
@@ -103,7 +102,6 @@ function ConversationScreen({ entry, channel, onBack }: ConversationScreenProps)
       <Channel
         channel={channel}
         Message={ChatMessageBubble}
-        Input={ChatInput}
       >
         <Window>
           {/* Custom header with back button */}
@@ -118,7 +116,7 @@ function ConversationScreen({ entry, channel, onBack }: ConversationScreenProps)
           </div>
 
           {/* Input bar */}
-          <MessageInput Input={ChatInput} />
+          <MessageInput />
         </Window>
         <Thread />
       </Channel>

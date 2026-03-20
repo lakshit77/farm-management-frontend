@@ -6,7 +6,7 @@
  * bot messages in a subtle warm tint.
  */
 
-import { useMessageContext } from "stream-chat-react";
+import { MessageText, useMessageContext } from "stream-chat-react";
 import { Bot } from "lucide-react";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -39,7 +39,6 @@ export function ChatMessageBubble() {
   const isBot = BOT_IDS.includes(message.user?.id ?? "");
   const isFirst = groupStyles?.[0] === "top" || groupStyles?.[0] === "single";
   const isLast = groupStyles?.[0] === "bottom" || groupStyles?.[0] === "single";
-  const text = message.text ?? "";
   const time = formatMessageDate(message.created_at as unknown as string | undefined);
   const senderName = message.user?.name ?? message.user?.id ?? "";
 
@@ -83,9 +82,11 @@ export function ChatMessageBubble() {
               <p className="text-[11px] font-semibold text-warm-rust mb-1">
                 {senderName}
               </p>
-              <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words">
-                {text}
-              </p>
+              <MessageText
+                message={message}
+                customWrapperClass="text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words"
+                customInnerClass="text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words"
+              />
               <p className="text-[10px] text-warm-rust/60 mt-1">{time}</p>
             </div>
           </div>
@@ -110,9 +111,11 @@ export function ChatMessageBubble() {
                 : "rounded-lg rounded-r-sm"
             }`}
           >
-            <p className="text-sm text-white leading-relaxed whitespace-pre-wrap break-words">
-              {text}
-            </p>
+            <MessageText
+              message={message}
+              customWrapperClass="text-sm text-white leading-relaxed whitespace-pre-wrap break-words"
+              customInnerClass="text-sm text-white leading-relaxed whitespace-pre-wrap break-words"
+            />
             <div className="flex items-center justify-end gap-1 mt-1">
               <p className="text-[10px] text-white/60">{time}</p>
               {/* Read receipt tick */}
@@ -158,9 +161,11 @@ export function ChatMessageBubble() {
             <p className="text-[11px] font-semibold text-accent-green-dark mb-1">
               {senderName}
             </p>
-            <p className="text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words">
-              {text}
-            </p>
+            <MessageText
+              message={message}
+              customWrapperClass="text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words"
+              customInnerClass="text-sm text-text-primary leading-relaxed whitespace-pre-wrap break-words"
+            />
             <p className="text-[10px] text-text-secondary mt-1">{time}</p>
           </div>
         </div>

@@ -26,7 +26,6 @@ import { Loader2, MessageCircle, MessageSquare } from "lucide-react";
 import { useChat } from "../contexts/ChatContext";
 import { useAuth } from "../contexts/AuthContext";
 import { ChatMessageBubble } from "../components/chat/ChatMessageBubble";
-import { ChatInput } from "../components/chat/ChatInput";
 import { ChatHeader } from "../components/chat/ChatHeader";
 import { ChatChannelListItem, type ChannelEntry, type ChannelKey } from "../components/chat/ChatChannelList";
 
@@ -172,7 +171,6 @@ export function ChatView(): React.ReactElement {
           <Channel
             channel={activeChannel}
             Message={ChatMessageBubble}
-            Input={ChatInput}
           >
             <Window>
               <ChatHeader channelKey={activeEntry.key} />
@@ -182,7 +180,7 @@ export function ChatView(): React.ReactElement {
                   messageActions={["delete", "flag", "react"]}
                 />
               </div>
-              <MessageInput Input={ChatInput} />
+              <MessageInput />
             </Window>
             <Thread />
           </Channel>
