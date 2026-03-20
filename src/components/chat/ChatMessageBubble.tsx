@@ -6,21 +6,23 @@
  *  - Others: left-aligned white
  *  - Bot messages: left-aligned warm tint
  *
- * Features:
- *  - @mention highlighting via renderText()
- *  - Inline quoted-message (reply) preview inside the bubble
- *  - Reaction emoji counts below the bubble
- *  - Hover action bar: quick-react (5 emojis) + Reply + More
+ * Desktop interactions (mouse):
+ *  - Hover reveals a compact action bar beside the bubble
+ *  - Reaction flyout is absolutely-positioned so it never affects layout
+ *
+ * Mobile interactions (touch):
+ *  - Long press → bottom sheet with emoji reactions + Reply
+ *  - Swipe left  → reply directly (like WhatsApp)
  */
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   useMessageContext,
   useReactionHandler,
   renderText,
 } from "stream-chat-react";
 import { useMessageComposer } from "stream-chat-react";
-import { Bot, Reply, SmilePlus } from "lucide-react";
+import { Bot, Reply, X } from "lucide-react";
 import type { UserResponse, LocalMessage } from "stream-chat";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -40,24 +42,20 @@ interface ReactionCount {
 
 const BOT_IDS = ["all-team-bot", "admin-bot", "personal-bot"];
 
-/** Quick-react options shown in the hover action bar. */
 const QUICK_REACTIONS = [
-  { type: "like", emoji: "👍" },
-  { type: "love", emoji: "❤️" },
-  { type: "haha", emoji: "😂" },
-  { type: "wow", emoji: "😮" },
-  { type: "sad", emoji: "😢" },
+  { type: "like",  emoji: "👍" },
+  { type: "love",  emoji: "❤️" },
+  { type: "haha",  emoji: "😂" },
+  { type: "wow",   emoji: "😮" },
+  { type: "sad",   emoji: "😢" },
 ];
 
-/** Maps Stream reaction type → display emoji. */
 const REACTION_EMOJI: Record<string, string> = {
-  like: "👍",
-  love: "❤️",
-  haha: "😂",
-  wow: "😮",
-  sad: "😢",
-  angry: "😠",
+  like: "👍", love: "❤️", haha: "😂", wow: "😮", sad: "😢", angry: "😠",
 };
+
+/** Minimum horizontal swipe distance (px) to trigger reply. */
+const SWIPE_REPLY_THRESHOLD = 60;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -78,16 +76,11 @@ function formatMessageDate(date: Date | string | undefined): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-/** Extracts reaction counts from the message. */
 function getReactionCounts(message: { reaction_counts?: Record<string, number> }): ReactionCount[] {
   const counts = message.reaction_counts ?? {};
   return Object.entries(counts)
     .filter(([, count]) => count > 0)
-    .map(([type, count]) => ({
-      type,
-      count,
-      emoji: REACTION_EMOJI[type] ?? "👍",
-    }));
+    .map(([type, count]) => ({ type, count, emoji: REACTION_EMOJI[type] ?? "👍" }));
 }
 
 // ── Mention renderers ──────────────────────────────────────────────────────────
@@ -99,7 +92,6 @@ function OwnMention({ children }: MentionProps): React.ReactElement {
     </span>
   );
 }
-
 function OtherMention({ children }: MentionProps): React.ReactElement {
   return (
     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-accent-green/15 text-accent-green-dark font-semibold text-[0.8em] leading-none mx-0.5">
@@ -107,7 +99,6 @@ function OtherMention({ children }: MentionProps): React.ReactElement {
     </span>
   );
 }
-
 function BotMention({ children }: MentionProps): React.ReactElement {
   return (
     <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-warm-rust/15 text-warm-rust font-semibold text-[0.8em] leading-none mx-0.5">
@@ -116,23 +107,15 @@ function BotMention({ children }: MentionProps): React.ReactElement {
   );
 }
 
-// ── QuotedPreview — inline reply block inside bubble ──────────────────────────
+// ── QuotedPreview ─────────────────────────────────────────────────────────────
 
 interface QuotedPreviewProps {
-  /** The quoted message object from message.quoted_message */
-  quoted: {
-    text?: string;
-    user?: { name?: string; id?: string };
-  };
+  quoted: { text?: string; user?: { name?: string; id?: string } };
   isOwn: boolean;
 }
 
-/**
- * Renders the quoted (replied-to) message as a compact WhatsApp-style block
- * at the top of the bubble.
- */
 function QuotedPreview({ quoted, isOwn }: QuotedPreviewProps): React.ReactElement {
-  const author = quoted.user?.name ?? quoted.user?.id ?? "Unknown";
+  const author  = quoted.user?.name ?? quoted.user?.id ?? "Unknown";
   const preview = (quoted.text ?? "").slice(0, 120) || "📎 Attachment";
 
   if (isOwn) {
@@ -143,16 +126,15 @@ function QuotedPreview({ quoted, isOwn }: QuotedPreviewProps): React.ReactElemen
       </div>
     );
   }
-
   return (
-    <div className="mb-2 pl-2 border-l-2 border-accent-green rounded-sm bg-accent-green/8 rounded-r-sm py-1 pr-1">
+    <div className="mb-2 pl-2 border-l-2 border-accent-green bg-accent-green/[0.07] rounded-r-sm py-1 pr-1">
       <p className="text-[10px] font-semibold text-accent-green-dark mb-0.5">{author}</p>
       <p className="text-[11px] text-text-secondary leading-snug line-clamp-2">{preview}</p>
     </div>
   );
 }
 
-// ── ReactionPill row ───────────────────────────────────────────────────────────
+// ── ReactionsRow ──────────────────────────────────────────────────────────────
 
 interface ReactionsRowProps {
   reactions: ReactionCount[];
@@ -161,26 +143,22 @@ interface ReactionsRowProps {
   isOwn: boolean;
 }
 
-/**
- * Renders the row of reaction pills below a bubble, matching WhatsApp style.
- */
 function ReactionsRow({ reactions, ownReactionTypes, onReact, isOwn }: ReactionsRowProps): React.ReactElement | null {
   if (reactions.length === 0) return null;
-
   return (
     <div className={`flex flex-wrap gap-1 mt-1 ${isOwn ? "justify-end" : "justify-start"}`}>
       {reactions.map((r) => {
-        const isSelected = ownReactionTypes.includes(r.type);
+        const selected = ownReactionTypes.includes(r.type);
         return (
           <button
             key={r.type}
             type="button"
             onClick={() => onReact(r.type)}
-            className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all ${
-              isSelected
+            className={`flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all shadow-sm ${
+              selected
                 ? "bg-accent-green/20 border-accent-green text-accent-green-dark"
                 : "bg-white border-border-card text-text-secondary hover:bg-background-primary"
-            } shadow-sm`}
+            }`}
           >
             <span>{r.emoji}</span>
             <span>{r.count}</span>
@@ -191,7 +169,7 @@ function ReactionsRow({ reactions, ownReactionTypes, onReact, isOwn }: Reactions
   );
 }
 
-// ── HoverActionBar ─────────────────────────────────────────────────────────────
+// ── Desktop HoverActionBar ────────────────────────────────────────────────────
 
 interface HoverActionBarProps {
   isOwn: boolean;
@@ -202,9 +180,8 @@ interface HoverActionBarProps {
 }
 
 /**
- * The floating action bar that appears when hovering a message.
- * Shows quick-react emojis + Reply button. Positioned on the opposite side
- * from the bubble (own: left side; others: right side).
+ * Shown on mouse-hover (desktop only). The quick-reaction flyout is absolutely
+ * positioned so it floats above the bar without pushing any content around.
  */
 function HoverActionBar({
   isOwn,
@@ -215,23 +192,24 @@ function HoverActionBar({
 }: HoverActionBarProps): React.ReactElement {
   return (
     <div
-      className={`flex items-center gap-1 self-center ${isOwn ? "mr-1" : "ml-1"}`}
-      // Stop hover-out from closing the bar while interacting with it
+      className={`relative flex items-center gap-1 self-center ${isOwn ? "mr-1" : "ml-1"}`}
       onMouseEnter={(e) => e.stopPropagation()}
     >
-      {/* Quick reactions flyout */}
+      {/* Quick-reaction flyout — absolutely positioned, never in flow */}
       {showQuickReactions && (
-        <div className="flex items-center gap-0.5 bg-white border border-border-card rounded-full px-2 py-1 shadow-lg">
+        <div
+          className={`absolute bottom-full mb-1.5 flex items-center gap-0.5 bg-white border border-border-card rounded-full px-2 py-1.5 shadow-xl z-50 ${
+            isOwn ? "right-0" : "left-0"
+          }`}
+          style={{ whiteSpace: "nowrap" }}
+        >
           {QUICK_REACTIONS.map((r) => (
             <button
               key={r.type}
               type="button"
               title={r.type}
-              onClick={() => {
-                onReact(r.type);
-                setShowQuickReactions(false);
-              }}
-              className="text-base hover:scale-125 transition-transform p-0.5"
+              onClick={() => { onReact(r.type); setShowQuickReactions(false); }}
+              className="text-lg hover:scale-125 transition-transform p-0.5 leading-none"
             >
               {r.emoji}
             </button>
@@ -239,14 +217,20 @@ function HoverActionBar({
         </div>
       )}
 
-      {/* Emoji-picker toggle */}
+      {/* Smile toggle */}
       <button
         type="button"
         title="React"
         onClick={() => setShowQuickReactions(!showQuickReactions)}
         className="w-7 h-7 flex items-center justify-center rounded-full bg-white border border-border-card text-text-secondary hover:text-accent-green hover:border-accent-green/40 shadow-sm transition-all"
       >
-        <SmilePlus className="size-3.5" />
+        {/* Smiley face SVG — avoids any icon size mismatch */}
+        <svg viewBox="0 0 20 20" fill="none" className="size-3.5" stroke="currentColor" strokeWidth="1.6">
+          <circle cx="10" cy="10" r="8" />
+          <path d="M7 11.5c.5 1.5 5.5 1.5 6 0" strokeLinecap="round" />
+          <circle cx="7.5" cy="8.5" r="0.8" fill="currentColor" stroke="none" />
+          <circle cx="12.5" cy="8.5" r="0.8" fill="currentColor" stroke="none" />
+        </svg>
       </button>
 
       {/* Reply */}
@@ -262,33 +246,129 @@ function HoverActionBar({
   );
 }
 
+// ── Mobile bottom-sheet ───────────────────────────────────────────────────────
+
+interface MobileActionSheetProps {
+  onReact: (type: string) => void;
+  onReply: () => void;
+  onClose: () => void;
+  ownReactionTypes: string[];
+}
+
+/**
+ * WhatsApp-style bottom sheet shown after a long press on mobile.
+ * Emoji row on top, then a Reply row below.
+ */
+function MobileActionSheet({ onReact, onReply, onClose, ownReactionTypes }: MobileActionSheetProps): React.ReactElement {
+  // Close on backdrop tap
+  useEffect(() => {
+    const handler = (e: TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-action-sheet]")) return;
+      onClose();
+    };
+    document.addEventListener("touchstart", handler);
+    return () => document.removeEventListener("touchstart", handler);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-end" style={{ background: "rgba(0,0,0,0.35)" }}>
+      <div
+        data-action-sheet
+        className="w-full bg-white rounded-t-2xl pb-safe animate-slide-up"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-border-card" />
+        </div>
+
+        {/* Emoji reactions row */}
+        <div className="flex items-center justify-around px-6 py-3 border-b border-border-card/50">
+          {QUICK_REACTIONS.map((r) => {
+            const selected = ownReactionTypes.includes(r.type);
+            return (
+              <button
+                key={r.type}
+                type="button"
+                onClick={() => { onReact(r.type); onClose(); }}
+                className={`flex flex-col items-center gap-1 p-1 rounded-xl transition-all active:scale-90 ${
+                  selected ? "bg-accent-green/15" : ""
+                }`}
+              >
+                <span className="text-2xl leading-none">{r.emoji}</span>
+                {selected && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-green block" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Reply row */}
+        <button
+          type="button"
+          onClick={() => { onReply(); onClose(); }}
+          className="flex items-center gap-3 w-full px-6 py-4 text-text-primary active:bg-background-primary transition-colors"
+        >
+          <div className="w-9 h-9 rounded-full bg-background-primary flex items-center justify-center">
+            <Reply className="size-4 text-accent-green-dark" />
+          </div>
+          <span className="font-body text-sm font-medium">Reply</span>
+        </button>
+
+        {/* Cancel */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center gap-3 w-full px-6 py-4 text-text-secondary active:bg-background-primary transition-colors border-t border-border-card/50"
+        >
+          <div className="w-9 h-9 rounded-full bg-background-primary flex items-center justify-center">
+            <X className="size-4 text-text-secondary" />
+          </div>
+          <span className="font-body text-sm">Cancel</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 /**
  * Renders a single chat message as a WhatsApp-style bubble.
  *
- * Hover to reveal the action bar (react / reply).
- * Reactions display as pill counts below the bubble.
- * Replies display as a quoted-message block inside the bubble.
+ * Desktop: hover → action bar (absolutely-positioned flyout for reactions).
+ * Mobile:  long-press → bottom sheet; swipe-left → reply.
  */
 export function ChatMessageBubble(): React.ReactElement | null {
   const { message, isMyMessage, groupStyles } = useMessageContext();
   const handleReaction = useReactionHandler(message as unknown as LocalMessage);
   const messageComposer = useMessageComposer();
 
+  // Desktop hover state
   const [hovered, setHovered] = useState(false);
   const [showQuickReactions, setShowQuickReactions] = useState(false);
   const hoverTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Mobile state
+  const [showSheet, setShowSheet] = useState(false);
+  const longPressTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const isSwiping = useRef(false);
+
   const isOwn = isMyMessage();
-  const isBot = BOT_IDS.includes(message.user?.id ?? "");
-  const isFirst = groupStyles?.[0] === "top" || groupStyles?.[0] === "single";
-  const isLast = groupStyles?.[0] === "bottom" || groupStyles?.[0] === "single";
-  const text = message.text ?? "";
+  const isBot  = BOT_IDS.includes(message.user?.id ?? "");
+  const isFirst = groupStyles?.[0] === "top"    || groupStyles?.[0] === "single";
+  const isLast  = groupStyles?.[0] === "bottom" || groupStyles?.[0] === "single";
+
+  const text          = message.text ?? "";
   const mentionedUsers = (message.mentioned_users ?? []) as UserResponse[];
-  const time = formatMessageDate(message.created_at as unknown as string | undefined);
-  const senderName = message.user?.name ?? message.user?.id ?? "";
-  const reactions = getReactionCounts(message as { reaction_counts?: Record<string, number> });
+  const time          = formatMessageDate(message.created_at as unknown as string | undefined);
+  const senderName    = message.user?.name ?? message.user?.id ?? "";
+  const reactions     = getReactionCounts(message as { reaction_counts?: Record<string, number> });
   const ownReactionTypes = (message.own_reactions ?? []).map((r) => r.type as string);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -296,27 +376,86 @@ export function ChatMessageBubble(): React.ReactElement | null {
     | { text?: string; user?: { name?: string; id?: string } }
     | undefined;
 
+  // ── Desktop mouse handlers ──────────────────────────────────────────────────
+
   function handleMouseEnter(): void {
     if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
     setHovered(true);
   }
-
   function handleMouseLeave(): void {
     hoverTimeout.current = setTimeout(() => {
       setHovered(false);
       setShowQuickReactions(false);
-    }, 200);
+    }, 150);
   }
 
-  function onReact(type: string): void {
-    handleReaction(type);
+  // ── Mobile touch handlers ───────────────────────────────────────────────────
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartX.current = t.clientX;
+    touchStartY.current = t.clientY;
+    isSwiping.current = false;
+    setSwipeOffset(0);
+
+    // Long press — fire after 500ms if no move
+    longPressTimeout.current = setTimeout(() => {
+      setShowSheet(true);
+    }, 500);
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    const dx = t.clientX - touchStartX.current;
+    const dy = Math.abs(t.clientY - touchStartY.current);
+
+    // Cancel long press if user is scrolling or swiping
+    if (Math.abs(dx) > 8 || dy > 8) {
+      if (longPressTimeout.current) clearTimeout(longPressTimeout.current);
+    }
+
+    // Track right swipe only (dx > 0)
+    if (dx > 10 && dy < 30) {
+      isSwiping.current = true;
+      // Clamp offset to max SWIPE_REPLY_THRESHOLD
+      setSwipeOffset(Math.min(dx, SWIPE_REPLY_THRESHOLD));
+    }
+  }, []);
+
+  const onTouchEnd = useCallback(() => {
+    if (longPressTimeout.current) clearTimeout(longPressTimeout.current);
+
+    if (isSwiping.current && swipeOffset >= (SWIPE_REPLY_THRESHOLD * 0.75)) {
+      messageComposer.setQuotedMessage(message as unknown as LocalMessage);
+    }
+    isSwiping.current = false;
+    setSwipeOffset(0);
+  }, [swipeOffset, message, messageComposer]);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  function onReact(type: string): void { handleReaction(type); }
+  function onReply(): void { messageComposer.setQuotedMessage(message as unknown as LocalMessage); }
+
+  function bubbleShape(side: "left" | "right"): string {
+    if (side === "right") {
+      if (isFirst && isLast) return "rounded-2xl rounded-br-md";
+      if (isFirst)           return "rounded-2xl rounded-br-sm";
+      if (isLast)            return "rounded-2xl rounded-tr-sm rounded-br-md";
+      return "rounded-lg rounded-r-sm";
+    }
+    if (isFirst && isLast) return "rounded-2xl rounded-bl-md";
+    if (isFirst)           return "rounded-2xl rounded-bl-sm";
+    if (isLast)            return "rounded-2xl rounded-tl-sm rounded-bl-md";
+    return "rounded-lg rounded-l-sm";
   }
 
-  function onReply(): void {
-    messageComposer.setQuotedMessage(message as unknown as LocalMessage);
-  }
+  // ── Swipe reply indicator ───────────────────────────────────────────────────
+  // Shows a small reply icon that appears as the user swipes left
+  const swipeProgress = Math.min(Math.abs(swipeOffset) / SWIPE_REPLY_THRESHOLD, 1);
+  const showSwipeHint = swipeOffset > 10;
 
-  // ── Deleted ────────────────────────────────────────────────────────────────
+  // ── Deleted ─────────────────────────────────────────────────────────────────
 
   if (message.type === "deleted") {
     return (
@@ -328,59 +467,220 @@ export function ChatMessageBubble(): React.ReactElement | null {
     );
   }
 
-  // ── Bubble shape util ──────────────────────────────────────────────────────
+  // ── Shared touch props ──────────────────────────────────────────────────────
+  const touchProps = {
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+  };
 
-  function bubbleShape(side: "left" | "right"): string {
-    if (side === "right") {
-      if (isFirst && isLast) return "rounded-2xl rounded-br-md";
-      if (isFirst) return "rounded-2xl rounded-br-sm";
-      if (isLast) return "rounded-2xl rounded-tr-sm rounded-br-md";
-      return "rounded-lg rounded-r-sm";
-    }
-    if (isFirst && isLast) return "rounded-2xl rounded-bl-md";
-    if (isFirst) return "rounded-2xl rounded-bl-sm";
-    if (isLast) return "rounded-2xl rounded-tl-sm rounded-bl-md";
-    return "rounded-lg rounded-l-sm";
-  }
-
-  // ── Bot messages ───────────────────────────────────────────────────────────
+  // ── Bot messages ────────────────────────────────────────────────────────────
 
   if (isBot) {
     return (
+      <>
+        {showSheet && (
+          <MobileActionSheet
+            onReact={onReact}
+            onReply={onReply}
+            onClose={() => setShowSheet(false)}
+            ownReactionTypes={ownReactionTypes}
+          />
+        )}
+        <div
+          className={`flex justify-start px-4 ${isLast ? "pb-2" : "pb-0.5"}`}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          {...touchProps}
+        >
+          <div className="flex items-end gap-1 max-w-[78%]">
+            {/* Swipe-reply hint — left of bubble (swipe right reveals it) */}
+            {showSwipeHint && (
+              <div
+                className="flex items-center justify-center self-center mr-1 transition-opacity"
+                style={{ opacity: swipeProgress }}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                  swipeProgress >= 0.75 ? "bg-accent-green text-white" : "bg-border-card text-text-secondary"
+                }`}>
+                  <Reply className="size-3.5" />
+                </div>
+              </div>
+            )}
+
+            {/* Bot icon */}
+            <div className="shrink-0 w-7 h-7 mb-0.5">
+              {isLast && (
+                <div className="w-7 h-7 rounded-full bg-warm-orange-brown/20 flex items-center justify-center">
+                  <Bot className="size-3.5 text-warm-rust" />
+                </div>
+              )}
+            </div>
+
+            {/* Bubble */}
+            <div
+              className="min-w-0 transition-transform duration-100"
+              style={{ transform: `translateX(${swipeOffset}px)` }}
+            >
+              <div className={`bg-semantic-warning-bg border border-warm-orange-brown/20 px-3.5 py-2.5 shadow-sm ${bubbleShape("left")}`}>
+                {quotedMsg && <QuotedPreview quoted={quotedMsg} isOwn={false} />}
+                <p className="text-[11px] font-semibold text-warm-rust mb-1">{senderName}</p>
+                <div className="text-sm text-text-primary leading-relaxed break-words chat-message-text">
+                  {renderText(text, mentionedUsers, { customMarkDownRenderers: { mention: BotMention } })}
+                </div>
+                <p className="text-[10px] text-warm-rust/60 mt-1">{time}</p>
+              </div>
+              <ReactionsRow reactions={reactions} ownReactionTypes={ownReactionTypes} onReact={onReact} isOwn={false} />
+            </div>
+
+            {/* Desktop action bar */}
+            {hovered && (
+              <HoverActionBar
+                isOwn={false}
+                onReact={onReact}
+                onReply={onReply}
+                showQuickReactions={showQuickReactions}
+                setShowQuickReactions={setShowQuickReactions}
+              />
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Own messages ─────────────────────────────────────────────────────────────
+
+  if (isOwn) {
+    return (
+      <>
+        {showSheet && (
+          <MobileActionSheet
+            onReact={onReact}
+            onReply={onReply}
+            onClose={() => setShowSheet(false)}
+            ownReactionTypes={ownReactionTypes}
+          />
+        )}
+        <div
+          className={`flex justify-end px-4 ${isLast ? "pb-2" : "pb-0.5"}`}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          {...touchProps}
+        >
+          <div className="flex items-end gap-1 max-w-[78%]">
+            {/* Swipe-reply hint — appears to the left */}
+            {showSwipeHint && (
+              <div
+                className="flex items-center justify-center self-center mr-1 transition-opacity"
+                style={{ opacity: swipeProgress }}
+              >
+                <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                  swipeProgress >= 0.75 ? "bg-accent-green text-white" : "bg-border-card text-text-secondary"
+                }`}>
+                  <Reply className="size-3.5" />
+                </div>
+              </div>
+            )}
+
+            {/* Desktop action bar — left of own bubble */}
+            {hovered && (
+              <HoverActionBar
+                isOwn={true}
+                onReact={onReact}
+                onReply={onReply}
+                showQuickReactions={showQuickReactions}
+                setShowQuickReactions={setShowQuickReactions}
+              />
+            )}
+
+            {/* Bubble */}
+            <div
+              className="min-w-0 transition-transform duration-100"
+              style={{ transform: `translateX(${swipeOffset}px)` }}
+            >
+              <div className={`bg-accent-green-dark px-3.5 py-2.5 shadow-sm ${bubbleShape("right")}`}>
+                {quotedMsg && <QuotedPreview quoted={quotedMsg} isOwn={true} />}
+                <div className="text-sm text-white leading-relaxed break-words chat-message-text">
+                  {renderText(text, mentionedUsers, { customMarkDownRenderers: { mention: OwnMention } })}
+                </div>
+                <div className="flex items-center justify-end gap-1 mt-1">
+                  <p className="text-[10px] text-white/60">{time}</p>
+                  <svg className="size-3 text-white/60" viewBox="0 0 16 11" fill="currentColor">
+                    <path d="M11.071.653a.75.75 0 0 1 .025 1.06l-6.5 7a.75.75 0 0 1-1.096-.01l-2.5-2.857A.75.75 0 1 1 2.125 4.9l1.957 2.237L9.986.678a.75.75 0 0 1 1.085-.025Z" />
+                    <path d="M14.071.653a.75.75 0 0 1 .025 1.06l-6.5 7a.75.75 0 0 1-1.085.025.75.75 0 0 0 1.085-.025l6.5-7a.75.75 0 0 0-.025-1.06Z" opacity=".5" />
+                  </svg>
+                </div>
+              </div>
+              <ReactionsRow reactions={reactions} ownReactionTypes={ownReactionTypes} onReact={onReact} isOwn={true} />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Others' messages ──────────────────────────────────────────────────────
+
+  return (
+    <>
+      {showSheet && (
+        <MobileActionSheet
+          onReact={onReact}
+          onReply={onReply}
+          onClose={() => setShowSheet(false)}
+          ownReactionTypes={ownReactionTypes}
+        />
+      )}
       <div
         className={`flex justify-start px-4 ${isLast ? "pb-2" : "pb-0.5"}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        {...touchProps}
       >
         <div className="flex items-end gap-1 max-w-[78%]">
-          {/* Bot icon */}
+          {/* Swipe-reply hint — left of bubble (swipe right reveals it) */}
+          {showSwipeHint && (
+            <div
+              className="flex items-center justify-center self-center mr-1 transition-opacity"
+              style={{ opacity: swipeProgress }}
+            >
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center transition-all ${
+                swipeProgress >= 0.75 ? "bg-accent-green text-white" : "bg-border-card text-text-secondary"
+              }`}>
+                <Reply className="size-3.5" />
+              </div>
+            </div>
+          )}
+
+          {/* Avatar */}
           <div className="shrink-0 w-7 h-7 mb-0.5">
             {isLast && (
-              <div className="w-7 h-7 rounded-full bg-warm-orange-brown/20 flex items-center justify-center">
-                <Bot className="size-3.5 text-warm-rust" />
+              <div className="w-7 h-7 rounded-full bg-accent-green/20 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-accent-green-dark uppercase">
+                  {senderName.charAt(0)}
+                </span>
               </div>
             )}
           </div>
 
-          {/* Bubble + reactions */}
-          <div className="min-w-0">
-            <div className={`bg-semantic-warning-bg border border-warm-orange-brown/20 px-3.5 py-2.5 shadow-sm ${bubbleShape("left")}`}>
+          {/* Bubble */}
+          <div
+            className="min-w-0 transition-transform duration-100"
+            style={{ transform: `translateX(${swipeOffset}px)` }}
+          >
+            <div className={`bg-white border border-border-card px-3.5 py-2.5 shadow-sm ${bubbleShape("left")}`}>
               {quotedMsg && <QuotedPreview quoted={quotedMsg} isOwn={false} />}
-              <p className="text-[11px] font-semibold text-warm-rust mb-1">{senderName}</p>
+              <p className="text-[11px] font-semibold text-accent-green-dark mb-1">{senderName}</p>
               <div className="text-sm text-text-primary leading-relaxed break-words chat-message-text">
-                {renderText(text, mentionedUsers, { customMarkDownRenderers: { mention: BotMention } })}
+                {renderText(text, mentionedUsers, { customMarkDownRenderers: { mention: OtherMention } })}
               </div>
-              <p className="text-[10px] text-warm-rust/60 mt-1">{time}</p>
+              <p className="text-[10px] text-text-secondary mt-1">{time}</p>
             </div>
-            <ReactionsRow
-              reactions={reactions}
-              ownReactionTypes={ownReactionTypes}
-              onReact={onReact}
-              isOwn={false}
-            />
+            <ReactionsRow reactions={reactions} ownReactionTypes={ownReactionTypes} onReact={onReact} isOwn={false} />
           </div>
 
-          {/* Action bar */}
+          {/* Desktop action bar */}
           {hovered && (
             <HoverActionBar
               isOwn={false}
@@ -392,107 +692,6 @@ export function ChatMessageBubble(): React.ReactElement | null {
           )}
         </div>
       </div>
-    );
-  }
-
-  // ── Own messages ───────────────────────────────────────────────────────────
-
-  if (isOwn) {
-    return (
-      <div
-        className={`flex justify-end px-4 ${isLast ? "pb-2" : "pb-0.5"}`}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div className="flex items-end gap-1 max-w-[78%]">
-          {/* Action bar — to the LEFT of own bubbles */}
-          {hovered && (
-            <HoverActionBar
-              isOwn={true}
-              onReact={onReact}
-              onReply={onReply}
-              showQuickReactions={showQuickReactions}
-              setShowQuickReactions={setShowQuickReactions}
-            />
-          )}
-
-          {/* Bubble + reactions */}
-          <div className="min-w-0">
-            <div className={`bg-accent-green-dark px-3.5 py-2.5 shadow-sm ${bubbleShape("right")}`}>
-              {quotedMsg && <QuotedPreview quoted={quotedMsg} isOwn={true} />}
-              <div className="text-sm text-white leading-relaxed break-words chat-message-text">
-                {renderText(text, mentionedUsers, { customMarkDownRenderers: { mention: OwnMention } })}
-              </div>
-              <div className="flex items-center justify-end gap-1 mt-1">
-                <p className="text-[10px] text-white/60">{time}</p>
-                {/* Read receipt ticks */}
-                <svg className="size-3 text-white/60" viewBox="0 0 16 11" fill="currentColor">
-                  <path d="M11.071.653a.75.75 0 0 1 .025 1.06l-6.5 7a.75.75 0 0 1-1.096-.01l-2.5-2.857A.75.75 0 1 1 2.125 4.9l1.957 2.237L9.986.678a.75.75 0 0 1 1.085-.025Z" />
-                  <path d="M14.071.653a.75.75 0 0 1 .025 1.06l-6.5 7a.75.75 0 0 1-1.085.025.75.75 0 0 0 1.085-.025l6.5-7a.75.75 0 0 0-.025-1.06Z" opacity=".5" />
-                </svg>
-              </div>
-            </div>
-            <ReactionsRow
-              reactions={reactions}
-              ownReactionTypes={ownReactionTypes}
-              onReact={onReact}
-              isOwn={true}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── Others' messages ───────────────────────────────────────────────────────
-
-  return (
-    <div
-      className={`flex justify-start px-4 ${isLast ? "pb-2" : "pb-0.5"}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <div className="flex items-end gap-1 max-w-[78%]">
-        {/* Avatar */}
-        <div className="shrink-0 w-7 h-7 mb-0.5">
-          {isLast && (
-            <div className="w-7 h-7 rounded-full bg-accent-green/20 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-accent-green-dark uppercase">
-                {senderName.charAt(0)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Bubble + reactions */}
-        <div className="min-w-0">
-          <div className={`bg-white border border-border-card px-3.5 py-2.5 shadow-sm ${bubbleShape("left")}`}>
-            {quotedMsg && <QuotedPreview quoted={quotedMsg} isOwn={false} />}
-            <p className="text-[11px] font-semibold text-accent-green-dark mb-1">{senderName}</p>
-            <div className="text-sm text-text-primary leading-relaxed break-words chat-message-text">
-              {renderText(text, mentionedUsers, { customMarkDownRenderers: { mention: OtherMention } })}
-            </div>
-            <p className="text-[10px] text-text-secondary mt-1">{time}</p>
-          </div>
-          <ReactionsRow
-            reactions={reactions}
-            ownReactionTypes={ownReactionTypes}
-            onReact={onReact}
-            isOwn={false}
-          />
-        </div>
-
-        {/* Action bar */}
-        {hovered && (
-          <HoverActionBar
-            isOwn={false}
-            onReact={onReact}
-            onReply={onReply}
-            showQuickReactions={showQuickReactions}
-            setShowQuickReactions={setShowQuickReactions}
-          />
-        )}
-      </div>
-    </div>
+    </>
   );
 }
