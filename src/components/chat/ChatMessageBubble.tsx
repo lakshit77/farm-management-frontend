@@ -359,6 +359,16 @@ export function ChatMessageBubble(): React.ReactElement | null {
   const [swipeOffset, setSwipeOffset] = useState(0);
   const isSwiping = useRef(false);
 
+  // Clear all pending timeouts on unmount to prevent state updates on
+  // unmounted components. With virtual scrolling, messages mount/unmount
+  // frequently, making this cleanup critical.
+  useEffect(() => {
+    return () => {
+      if (hoverTimeout.current)    clearTimeout(hoverTimeout.current);
+      if (longPressTimeout.current) clearTimeout(longPressTimeout.current);
+    };
+  }, []);
+
   const isOwn = isMyMessage();
   const isBot  = BOT_IDS.includes(message.user?.id ?? "");
   const isFirst = groupStyles?.[0] === "top"    || groupStyles?.[0] === "single";
