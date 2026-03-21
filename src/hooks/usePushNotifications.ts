@@ -17,7 +17,7 @@
  *   push.updatePreferences({ results: false });  // update backend prefs
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { API_BASE_URL } from "../api/api";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -173,9 +173,18 @@ export function usePushNotifications({
   const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
   const [prefsLoading, setPrefsLoading] = useState(false);
 
-  const authHeader: Record<string, string> = accessToken
-    ? { Authorization: `Bearer ${accessToken}` }
-    : {};
+  // Keep a ref so callbacks always read the latest token even when mid-flight.
+  // This prevents stale closure bugs where an in-progress async op uses an
+  // old accessToken after auth state changes between awaits.
+  const accessTokenRef = useRef<string | null>(accessToken);
+  useEffect(() => {
+    accessTokenRef.current = accessToken;
+  }, [accessToken]);
+
+  const getAuthHeader = useCallback((): Record<string, string> => {
+    const token = accessTokenRef.current;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, []);
 
   // ── Fetch preferences ────────────────────────────────────────────────────────
 
@@ -185,7 +194,7 @@ export function usePushNotifications({
     try {
       const resp = await fetch(
         `${API_BASE_URL}/api/v1/push/preferences?farm_id=${farmId}`,
-        { headers: authHeader }
+        { headers: getAuthHeader() }
       );
       if (resp.ok) {
         const json = await resp.json();
@@ -196,7 +205,7 @@ export function usePushNotifications({
     } finally {
       setPrefsLoading(false);
     }
-  }, [userId, farmId, accessToken]);
+  }, [userId, farmId, accessToken, getAuthHeader]);
 
   useEffect(() => {
     if (userId && farmId && accessToken) {
@@ -245,7 +254,7 @@ export function usePushNotifications({
       // Step 3: Save subscription to backend
       const resp = await fetch(`${API_BASE_URL}/api/v1/push/subscribe`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader },
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
         body: JSON.stringify({
           endpoint: subJson.endpoint,
           p256dh: keys.p256dh ?? "",
@@ -272,7 +281,7 @@ export function usePushNotifications({
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported, userId, farmId, accessToken, preferences, refetchPreferences]);
+  }, [isSupported, userId, farmId, accessToken, preferences, refetchPreferences, getAuthHeader]);
 
   // ── Unsubscribe ──────────────────────────────────────────────────────────────
 
@@ -292,7 +301,7 @@ export function usePushNotifications({
         // Deactivate in backend
         await fetch(`${API_BASE_URL}/api/v1/push/subscribe`, {
           method: "DELETE",
-          headers: { "Content-Type": "application/json", ...authHeader },
+          headers: { "Content-Type": "application/json", ...getAuthHeader() },
           body: JSON.stringify({ endpoint }),
         });
       }
@@ -307,7 +316,7 @@ export function usePushNotifications({
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported, accessToken]);
+  }, [isSupported, accessToken, getAuthHeader]);
 
   // ── Dismiss prompt ───────────────────────────────────────────────────────────
 
@@ -330,7 +339,7 @@ export function usePushNotifications({
           `${API_BASE_URL}/api/v1/push/preferences?farm_id=${farmId}`,
           {
             method: "PUT",
-            headers: { "Content-Type": "application/json", ...authHeader },
+            headers: { "Content-Type": "application/json", ...getAuthHeader() },
             body: JSON.stringify(partial),
           }
         );
@@ -346,7 +355,7 @@ export function usePushNotifications({
         await refetchPreferences();
       }
     },
-    [userId, farmId, accessToken, refetchPreferences]
+    [userId, farmId, accessToken, refetchPreferences, getAuthHeader]
   );
 
   return {
