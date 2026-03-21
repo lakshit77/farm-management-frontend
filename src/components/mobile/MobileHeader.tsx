@@ -5,6 +5,8 @@ import {
   Activity,
   Loader2,
   LogOut,
+  Bell,
+  BellOff,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -30,6 +32,8 @@ interface MobileHeaderProps {
   onSync: () => void;
   syncing: boolean;
   hasActiveFilters: boolean;
+  onNotificationSettings?: () => void;
+  isNotificationSubscribed?: boolean;
 }
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
@@ -40,6 +44,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   onSync,
   syncing,
   hasActiveFilters,
+  onNotificationSettings,
+  isNotificationSubscribed,
 }) => {
   const { user, signOut } = useAuth();
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -121,6 +127,22 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
           <Activity className="size-4.5" />
         )}
       </button>
+
+      {/* Notification settings button */}
+      {onNotificationSettings && (
+        <button
+          type="button"
+          onClick={onNotificationSettings}
+          className="w-10 h-10 flex items-center justify-center rounded-lg text-text-secondary active:bg-background-primary transition-colors touch-manipulation relative"
+          aria-label="Notification settings"
+        >
+          {isNotificationSubscribed ? (
+            <Bell className="size-4.5 text-accent-green-dark" />
+          ) : (
+            <BellOff className="size-4.5" />
+          )}
+        </button>
+      )}
 
       {/* Logout button */}
       <button

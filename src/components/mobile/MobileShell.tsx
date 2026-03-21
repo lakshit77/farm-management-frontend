@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
 import { MobileHeader } from "./MobileHeader";
 import { BottomTabBar, type MobileTab } from "./BottomTabBar";
@@ -10,6 +10,12 @@ import { MobileRingBoard } from "./MobileRingBoard";
 import { MobileNotificationsTab } from "./MobileNotificationsTab";
 import { ConfirmSyncModal } from "../ConfirmSyncModal";
 import { MobileChatView } from "../../views/MobileChatView";
+import { IosBanner } from "../notifications/IosBanner";
+import { SoftPermissionPrompt } from "../notifications/SoftPermissionPrompt";
+import { NotificationSettingsPanel } from "../notifications/NotificationSettingsPanel";
+import { usePushNotifications } from "../../hooks/usePushNotifications";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
 import type { DashboardFilters } from "../FilterBar";
 import type { ScheduleViewData, NotificationLogItem } from "../../api";
 
@@ -59,6 +65,33 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   const [filterOpen, setFilterOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
+  const [notifSettingsOpen, setNotifSettingsOpen] = useState(false);
+
+  // ── Push notifications setup ──────────────────────────────────────────────
+  const { user, farmId } = useAuth();
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setAccessToken(data.session?.access_token ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, session) => {
+      setAccessToken(session?.access_token ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const push = usePushNotifications({
+    userId: user?.id ?? null,
+    farmId: farmId ?? null,
+    accessToken,
+  });
+
+  // Detect iOS in Safari (not standalone) for the install banner
+  const isIosSafari =
+    typeof navigator !== "undefined" &&
+    /iphone|ipad/i.test(navigator.userAgent) &&
+    !push.isStandalone;
 
   const hasActiveFilters =
     filters.horseName !== "" ||
@@ -67,6 +100,16 @@ export const MobileShell: React.FC<MobileShellProps> = ({
 
   return (
     <div className="min-h-screen bg-background-primary flex flex-col">
+      {/* Notification settings full-screen panel */}
+      {notifSettingsOpen && (
+        <div className="fixed inset-0 z-[65] bg-background-primary flex flex-col">
+          <NotificationSettingsPanel
+            push={push}
+            onClose={() => setNotifSettingsOpen(false)}
+          />
+        </div>
+      )}
+
       {/* Chat takes over the full screen — rendered as a fixed overlay outside the shell */}
       {activeTab === "chat" && (
         <div className="fixed inset-0 z-[60] bg-white flex flex-col">
@@ -77,6 +120,9 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         </div>
       )}
 
+      {/* iOS "Add to Home Screen" banner (shown above header on iOS Safari) */}
+      <IosBanner visible={isIosSafari} />
+
       <MobileHeader
         showName={showName}
         date={date}
@@ -85,6 +131,8 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         onSync={() => setSyncModalOpen(true)}
         syncing={syncing}
         hasActiveFilters={hasActiveFilters}
+        onNotificationSettings={() => setNotifSettingsOpen(true)}
+        isNotificationSubscribed={push.isSubscribed}
       />
 
       {/* Scrollable content area */}
@@ -142,6 +190,17 @@ export const MobileShell: React.FC<MobileShellProps> = ({
           </>
         )}
       </main>
+
+      {/* Soft permission prompt — shown 5s after first open, floats above the tab bar */}
+      {!isIosSafari && !notifSettingsOpen && (
+        <SoftPermissionPrompt
+          promptState={push.promptState}
+          isLoading={push.isLoading}
+          error={push.error}
+          onEnable={() => void push.subscribe()}
+          onDismiss={push.dismissPrompt}
+        />
+      )}
 
       {!conversationOpen && (
         <BottomTabBar
