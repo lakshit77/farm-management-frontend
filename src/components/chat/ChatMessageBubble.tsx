@@ -28,12 +28,11 @@ import {
   useMessageContext,
   useReactionHandler,
   useChannelStateContext,
-  useChatContext,
   renderText,
 } from "stream-chat-react";
 import { useMessageComposer } from "stream-chat-react";
 import { Bot, Reply, X, Check, Loader2 } from "lucide-react";
-import type { UserResponse, LocalMessage, Message, MessageResponse } from "stream-chat";
+import type { UserResponse, LocalMessage, Message } from "stream-chat";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -346,6 +345,17 @@ function MobileActionSheet({ onReact, onReply, onClose, ownReactionTypes }: Mobi
 // ── Action Buttons ─────────────────────────────────────────────────────────────
 
 /**
+ * Module-level store for optimistic answered state, keyed by bot message ID.
+ *
+ * React component state resets whenever BotActionButtons unmounts — which
+ * happens on every channel update (e.g. when the user's reply message arrives).
+ * Storing the answered state here means it survives remounts for the lifetime
+ * of the page session, while Stream's persisted custom.actions_answered covers
+ * refresh and other devices.
+ */
+const _answeredMessages = new Map<string, string>(); // messageId → selectedActionId
+
+/**
  * A single action button definition sent by the bot via message.custom.actions.
  *
  * @property id     - Machine identifier forwarded to n8n when clicked.
@@ -404,45 +414,53 @@ function BotActionButtons({
   selectedActionId,
 }: BotActionButtonsProps): React.ReactElement | null {
   const { channel } = useChannelStateContext("BotActionButtons");
-  const { client } = useChatContext("BotActionButtons");
+
+  // A render-trigger so the component re-renders after writing to the module map.
+  const [, forceUpdate] = useState(0);
   const [submitting, setSubmitting] = useState<string | null>(null);
 
   if (actions.length === 0) return null;
 
+  // Read optimistic state from the module-level map — survives component remounts
+  // caused by channel updates (e.g. when the user's reply message lands).
+  const localSelectedId = _answeredMessages.get(sourceMessageId) ?? null;
+  const localAnswered = localSelectedId !== null;
+
+  // Merge module-level optimistic state with Stream-persisted state.
+  // Whichever resolves first wins; they never contradict each other.
+  const effectiveAnswered = answered || localAnswered;
+  const effectiveSelectedId = selectedActionId ?? localSelectedId ?? undefined;
+
   async function handleClick(btn: ActionButton): Promise<void> {
-    if (answered || submitting) return;
+    if (effectiveAnswered || submitting) return;
+
+    // Write to the module-level map immediately — this grays out all buttons
+    // before any network call completes and survives any remount caused by
+    // channel updates (e.g. when the reply message lands).
+    // NEVER rolled back: once the user clicks, the buttons stay disabled for
+    // the rest of this page session. The backend handles persisting the state
+    // across refresh/devices by updating the bot message server-side.
+    _answeredMessages.set(sourceMessageId, btn.id);
+    forceUpdate((n) => n + 1);
     setSubmitting(btn.id);
+
     try {
-      await Promise.all([
-        // 1. Send the user's reply — triggers the webhook → n8n pipeline.
-        // Cast to unknown first because Stream's Message type does not expose
-        // `custom` directly (it lives on CustomMessageData which is empty by
-        // default); the field is still sent and stored by the server.
-        channel.sendMessage({
-          text: btn.label,
-          custom: {
-            action_reply: {
-              action_id: btn.id,
-              action_context: actionContext ?? {},
-              source_message_id: sourceMessageId,
-            },
-          },
-        } as unknown as Message),
-        // 2. Persistently mark the original bot message as answered so the
-        //    disabled state survives refresh and is shared across all devices.
-        //    client.updateMessage() is used because Channel has no such method.
-        client.updateMessage({
-          id: sourceMessageId,
-          custom: {
-            actions,
+      // Send the user's reply — triggers the webhook → n8n pipeline.
+      // The backend will also update the original bot message to mark it as
+      // answered (custom.actions_answered = true) using server-side admin
+      // privileges, since the frontend user cannot update the bot's message.
+      await channel.sendMessage({
+        text: btn.label,
+        custom: {
+          action_reply: {
+            action_id: btn.id,
             action_context: actionContext ?? {},
-            actions_answered: true,
-            selected_action_id: btn.id,
+            source_message_id: sourceMessageId,
           },
-        } as Partial<MessageResponse>),
-      ]);
+        },
+      } as unknown as Message);
     } catch (err) {
-      console.error("[BotActionButtons] failed to submit action:", err);
+      console.error("[BotActionButtons] failed to send action reply:", err);
     } finally {
       setSubmitting(null);
     }
@@ -452,10 +470,10 @@ function BotActionButtons({
     <div className="flex flex-wrap gap-2 mt-2.5">
       {actions.map((btn) => {
         const style = btn.style ?? "primary";
-        const isSelected = answered && selectedActionId === btn.id;
-        const isOther = answered && selectedActionId !== btn.id;
+        const isSelected = effectiveAnswered && effectiveSelectedId === btn.id;
+        const isOther = effectiveAnswered && effectiveSelectedId !== btn.id;
         const isSubmittingThis = submitting === btn.id;
-        const isDisabled = answered || submitting !== null;
+        const isDisabled = effectiveAnswered || submitting !== null;
 
         let className =
           "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all focus:outline-none ";
