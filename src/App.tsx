@@ -64,7 +64,7 @@ function App(): React.ReactElement {
 }
 
 function AppShell(): React.ReactElement {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [headerLabel, setHeaderLabel] = useState<string | null>(null);
   const [classMonitoringLastRun, setClassMonitoringLastRun] = useState<string | null>(null);
   const [classMonitorLoading, setClassMonitorLoading] = useState<boolean>(false);
@@ -135,6 +135,15 @@ function AppShell(): React.ReactElement {
             )}
 
             <div className="ml-auto flex items-center gap-2 shrink-0">
+              {user?.email && (
+                <span
+                  className="hidden sm:inline-block max-w-[220px] truncate font-body text-xs text-text-secondary bg-background-primary border border-border-card rounded-lg px-3 py-1.5 select-all"
+                  title={user.email}
+                  aria-label={`Signed in as ${user.email}`}
+                >
+                  {user.email}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={signOut}

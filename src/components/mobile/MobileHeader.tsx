@@ -41,12 +41,12 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
   syncing,
   hasActiveFilters,
 }) => {
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dateLabel = useMemo(() => formatDateForDisplay(date), [date]);
 
   return (
-    <header className="sticky top-0 z-40 h-12 min-h-12 flex items-center gap-1.5 px-3 bg-surface-card border-b border-border-card shadow-card safe-area-top">
+    <header className="sticky top-0 z-40 min-h-12 flex items-center gap-1.5 px-3 bg-surface-card border-b border-border-card shadow-card safe-area-top">
       <img
         src="/favicon.svg"
         alt=""
@@ -55,13 +55,22 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         height={20}
         aria-hidden
       />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 py-1.5">
         <p className="font-heading text-sm font-bold text-accent-green-dark truncate leading-tight">
           {showName || "ShowGroundsLive"}
         </p>
         <p className="font-body text-[10px] text-text-secondary leading-tight truncate">
           {dateLabel}
         </p>
+        {user?.email && (
+          <p
+            className="font-body text-[10px] text-text-secondary leading-tight truncate opacity-70"
+            title={user.email}
+            aria-label={`Signed in as ${user.email}`}
+          >
+            {user.email}
+          </p>
+        )}
       </div>
 
       {/* Date picker — hidden input triggered by icon button */}

@@ -13,17 +13,27 @@
  * Mobile interactions (touch):
  *  - Long press → bottom sheet with emoji reactions + Reply
  *  - Swipe left  → reply directly (like WhatsApp)
+ *
+ * Bot action buttons:
+ *  - Bot messages may include a `custom.actions` array in the Stream message.
+ *  - BotActionButtons renders a generic, configurable row of buttons below the
+ *    bot bubble text.  Each button has an id, label, and optional style.
+ *  - On click the component sends an action_reply message and persistently marks
+ *    the original bot message as answered via channel.updateMessage(), so the
+ *    disabled state survives refresh and works across all devices.
  */
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   useMessageContext,
   useReactionHandler,
+  useChannelStateContext,
+  useChatContext,
   renderText,
 } from "stream-chat-react";
 import { useMessageComposer } from "stream-chat-react";
-import { Bot, Reply, X } from "lucide-react";
-import type { UserResponse, LocalMessage } from "stream-chat";
+import { Bot, Reply, X, Check, Loader2 } from "lucide-react";
+import type { UserResponse, LocalMessage, Message, MessageResponse } from "stream-chat";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -333,6 +343,155 @@ function MobileActionSheet({ onReact, onReply, onClose, ownReactionTypes }: Mobi
   );
 }
 
+// ── Action Buttons ─────────────────────────────────────────────────────────────
+
+/**
+ * A single action button definition sent by the bot via message.custom.actions.
+ *
+ * @property id     - Machine identifier forwarded to n8n when clicked.
+ * @property label  - Human-readable text shown on the button (anything).
+ * @property style  - Visual variant: "primary" | "secondary" | "danger".
+ *                    Defaults to "primary" if omitted.
+ */
+interface ActionButton {
+  id: string;
+  label: string;
+  style?: "primary" | "secondary" | "danger";
+}
+
+interface BotActionButtonsProps {
+  /** All buttons to render. */
+  actions: ActionButton[];
+  /** Opaque context blob forwarded unchanged to n8n on click. */
+  actionContext?: Record<string, unknown>;
+  /** Stream message id of the bot message that carries these buttons. */
+  sourceMessageId: string;
+  /** True when the user has already submitted a choice. Buttons are disabled. */
+  answered: boolean;
+  /** The id of the button the user chose (only meaningful when answered=true). */
+  selectedActionId?: string;
+}
+
+/** Tailwind classes for each button style in the active (clickable) state. */
+const STYLE_ACTIVE: Record<string, string> = {
+  primary:   "bg-accent-green-dark text-white hover:opacity-90",
+  secondary: "bg-white border border-border-card text-text-secondary hover:bg-background-primary",
+  danger:    "bg-red-500 text-white hover:bg-red-600",
+};
+
+/** Tailwind classes for the selected button in the answered state. */
+const STYLE_SELECTED: Record<string, string> = {
+  primary:   "bg-accent-green-dark/20 border border-accent-green-dark text-accent-green-dark",
+  secondary: "bg-background-primary border border-accent-green-dark text-accent-green-dark",
+  danger:    "bg-red-100 border border-red-500 text-red-600",
+};
+
+/**
+ * Renders a row of generic action buttons below a bot bubble.
+ *
+ * On click:
+ *  1. Sends a new channel message with custom.action_reply so n8n can process it.
+ *  2. Updates the original bot message via channel.updateMessage() to mark it as
+ *     answered.  This persists the disabled state across refresh and devices.
+ *
+ * The buttons are permanently disabled once answered (no re-clicking allowed).
+ */
+function BotActionButtons({
+  actions,
+  actionContext,
+  sourceMessageId,
+  answered,
+  selectedActionId,
+}: BotActionButtonsProps): React.ReactElement | null {
+  const { channel } = useChannelStateContext("BotActionButtons");
+  const { client } = useChatContext("BotActionButtons");
+  const [submitting, setSubmitting] = useState<string | null>(null);
+
+  if (actions.length === 0) return null;
+
+  async function handleClick(btn: ActionButton): Promise<void> {
+    if (answered || submitting) return;
+    setSubmitting(btn.id);
+    try {
+      await Promise.all([
+        // 1. Send the user's reply — triggers the webhook → n8n pipeline.
+        // Cast to unknown first because Stream's Message type does not expose
+        // `custom` directly (it lives on CustomMessageData which is empty by
+        // default); the field is still sent and stored by the server.
+        channel.sendMessage({
+          text: btn.label,
+          custom: {
+            action_reply: {
+              action_id: btn.id,
+              action_context: actionContext ?? {},
+              source_message_id: sourceMessageId,
+            },
+          },
+        } as unknown as Message),
+        // 2. Persistently mark the original bot message as answered so the
+        //    disabled state survives refresh and is shared across all devices.
+        //    client.updateMessage() is used because Channel has no such method.
+        client.updateMessage({
+          id: sourceMessageId,
+          custom: {
+            actions,
+            action_context: actionContext ?? {},
+            actions_answered: true,
+            selected_action_id: btn.id,
+          },
+        } as Partial<MessageResponse>),
+      ]);
+    } catch (err) {
+      console.error("[BotActionButtons] failed to submit action:", err);
+    } finally {
+      setSubmitting(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-2.5">
+      {actions.map((btn) => {
+        const style = btn.style ?? "primary";
+        const isSelected = answered && selectedActionId === btn.id;
+        const isOther = answered && selectedActionId !== btn.id;
+        const isSubmittingThis = submitting === btn.id;
+        const isDisabled = answered || submitting !== null;
+
+        let className =
+          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all focus:outline-none ";
+
+        if (isOther) {
+          className += "opacity-30 cursor-not-allowed bg-white border border-border-card text-text-secondary";
+        } else if (isSelected) {
+          className += STYLE_SELECTED[style] ?? STYLE_SELECTED.primary;
+        } else {
+          className += STYLE_ACTIVE[style] ?? STYLE_ACTIVE.primary;
+          if (isDisabled) className += " opacity-60 cursor-not-allowed";
+        }
+
+        return (
+          <button
+            key={btn.id}
+            type="button"
+            disabled={isDisabled}
+            onClick={() => handleClick(btn)}
+            className={className}
+            aria-pressed={isSelected}
+          >
+            {isSubmittingThis && (
+              <Loader2 className="size-3 animate-spin shrink-0" />
+            )}
+            {isSelected && !isSubmittingThis && (
+              <Check className="size-3 shrink-0" />
+            )}
+            {btn.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
 /**
@@ -388,6 +547,15 @@ export function ChatMessageBubble(): React.ReactElement | null {
   const quotedMsg = (message as any).quoted_message as
     | { text?: string; user?: { name?: string; id?: string } }
     | undefined;
+
+  // ── Action buttons (from bot messages with custom.actions) ──────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const messageCustom = (message as any).custom as Record<string, any> | undefined;
+  const botActions = (messageCustom?.actions ?? []) as ActionButton[];
+  const actionsAnswered = messageCustom?.actions_answered === true;
+  const selectedActionId = messageCustom?.selected_action_id as string | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const actionContext = messageCustom?.action_context as Record<string, unknown> | undefined;
 
   // ── Desktop mouse handlers ──────────────────────────────────────────────────
 
@@ -541,6 +709,15 @@ export function ChatMessageBubble(): React.ReactElement | null {
                 <div className="text-sm text-text-primary leading-relaxed break-words chat-message-text">
                   {renderText(text, mentionedUsers, { customMarkDownRenderers: { mention: BotMention } })}
                 </div>
+                {botActions.length > 0 && (
+                  <BotActionButtons
+                    actions={botActions}
+                    actionContext={actionContext}
+                    sourceMessageId={message.id ?? ""}
+                    answered={actionsAnswered}
+                    selectedActionId={selectedActionId}
+                  />
+                )}
                 <p className="text-[10px] text-warm-rust/60 mt-1">{time}</p>
               </div>
               <ReactionsRow reactions={reactions} ownReactionTypes={ownReactionTypes} onReact={onReact} isOwn={false} />
