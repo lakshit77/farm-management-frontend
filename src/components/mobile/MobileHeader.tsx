@@ -1,14 +1,5 @@
-import React, { useRef, useMemo } from "react";
-import {
-  Calendar,
-  SlidersHorizontal,
-  Activity,
-  Loader2,
-  LogOut,
-  Bell,
-  BellOff,
-} from "lucide-react";
-import { useAuth } from "../../contexts/AuthContext";
+import React, { useMemo } from "react";
+import { SlidersHorizontal, Menu } from "lucide-react";
 
 function formatDateForDisplay(dateStr: string): string {
   try {
@@ -27,28 +18,23 @@ function formatDateForDisplay(dateStr: string): string {
 interface MobileHeaderProps {
   showName: string | null;
   date: string;
-  onDateChange: (date: string) => void;
   onFilterOpen: () => void;
-  onSync: () => void;
-  syncing: boolean;
   hasActiveFilters: boolean;
-  onNotificationSettings?: () => void;
-  isNotificationSubscribed?: boolean;
+  onDrawerOpen: () => void;
 }
 
+/**
+ * Slim mobile top bar with branding, current date, filter shortcut, and
+ * a hamburger button that opens the MobileDrawer for secondary actions
+ * (date picker, sync, notification settings, sign out).
+ */
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
   showName,
   date,
-  onDateChange,
   onFilterOpen,
-  onSync,
-  syncing,
   hasActiveFilters,
-  onNotificationSettings,
-  isNotificationSubscribed,
+  onDrawerOpen,
 }) => {
-  const { user, signOut } = useAuth();
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const dateLabel = useMemo(() => formatDateForDisplay(date), [date]);
 
   return (
@@ -61,6 +47,8 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         height={20}
         aria-hidden
       />
+
+      {/* Branding + date */}
       <div className="min-w-0 flex-1 py-1.5">
         <p className="font-heading text-sm font-bold text-accent-green-dark truncate leading-tight">
           {showName || "ShowGroundsLive"}
@@ -68,90 +56,30 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         <p className="font-body text-[10px] text-text-secondary leading-tight truncate">
           {dateLabel}
         </p>
-        {user?.email && (
-          <p
-            className="font-body text-[10px] text-text-secondary leading-tight truncate opacity-70"
-            title={user.email}
-            aria-label={`Signed in as ${user.email}`}
-          >
-            {user.email}
-          </p>
-        )}
       </div>
 
-      {/* Date picker — hidden input triggered by icon button */}
-      <div className="relative shrink-0">
-        <button
-          type="button"
-          onClick={() => dateInputRef.current?.showPicker?.()}
-          className="w-10 h-10 flex items-center justify-center rounded-lg text-text-secondary active:bg-background-primary transition-colors touch-manipulation"
-          aria-label={`Date: ${date}`}
-        >
-          <Calendar className="size-4.5" />
-        </button>
-        <input
-          ref={dateInputRef}
-          type="date"
-          value={date}
-          onChange={(e) => onDateChange(e.target.value)}
-          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
-          aria-label="Select date"
-          tabIndex={-1}
-        />
-      </div>
-
-      {/* Filter button */}
+      {/* Filter button — high-frequency action stays in header */}
       <button
         type="button"
         onClick={onFilterOpen}
         className="relative w-10 h-10 flex items-center justify-center rounded-lg text-text-secondary active:bg-background-primary transition-colors touch-manipulation"
         aria-label="Open filters"
       >
-        <SlidersHorizontal className="size-4.5" />
+        <SlidersHorizontal className="size-4.5" aria-hidden />
         {hasActiveFilters && (
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-warm-orange-brown rounded-full" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-warm-orange-brown rounded-full" aria-hidden />
         )}
       </button>
 
-      {/* Sync button */}
+      {/* Hamburger — opens drawer for all secondary actions */}
       <button
         type="button"
-        onClick={onSync}
-        disabled={syncing}
-        className="w-10 h-10 flex items-center justify-center rounded-lg text-accent-green-dark active:bg-accent-green/10 disabled:opacity-50 transition-colors touch-manipulation"
-        aria-label="Sync data"
-      >
-        {syncing ? (
-          <Loader2 className="size-4.5 animate-spin" />
-        ) : (
-          <Activity className="size-4.5" />
-        )}
-      </button>
-
-      {/* Notification settings button */}
-      {onNotificationSettings && (
-        <button
-          type="button"
-          onClick={onNotificationSettings}
-          className="w-10 h-10 flex items-center justify-center rounded-lg text-text-secondary active:bg-background-primary transition-colors touch-manipulation relative"
-          aria-label="Notification settings"
-        >
-          {isNotificationSubscribed ? (
-            <Bell className="size-4.5 text-accent-green-dark" />
-          ) : (
-            <BellOff className="size-4.5" />
-          )}
-        </button>
-      )}
-
-      {/* Logout button */}
-      <button
-        type="button"
-        onClick={signOut}
+        onClick={onDrawerOpen}
         className="w-10 h-10 flex items-center justify-center rounded-lg text-text-secondary active:bg-background-primary transition-colors touch-manipulation"
-        aria-label="Sign out"
+        aria-label="Open menu"
+        aria-haspopup="dialog"
       >
-        <LogOut className="size-4.5" />
+        <Menu className="size-4.5" aria-hidden />
       </button>
     </header>
   );

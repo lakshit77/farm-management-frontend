@@ -222,8 +222,8 @@ export const FilterSheet: React.FC<FilterSheetProps> = ({
           />
         </div>
 
-        {/* Actions */}
-        <div className="px-4 pt-2 pb-4 flex gap-3 border-t border-border-card">
+        {/* Actions — extra bottom padding lifts buttons above the fixed bottom tab bar */}
+        <div className="px-4 pt-2 flex gap-3 border-t border-border-card" style={{ paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px) + 0.75rem)" }}>
           {hasActiveFilters && (
             <button
               type="button"

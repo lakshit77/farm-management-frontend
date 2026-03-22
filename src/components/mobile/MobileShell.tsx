@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
 import { MobileHeader } from "./MobileHeader";
+import { MobileDrawer } from "./MobileDrawer";
 import { BottomTabBar, type MobileTab } from "./BottomTabBar";
 import { FilterSheet } from "./FilterSheet";
 import { MobileOverviewTab } from "./MobileOverviewTab";
@@ -15,9 +16,22 @@ import { SoftPermissionPrompt } from "../notifications/SoftPermissionPrompt";
 import { NotificationSettingsPanel } from "../notifications/NotificationSettingsPanel";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
 import { useAuth } from "../../contexts/AuthContext";
+import { HeaderLabelContext } from "../../contexts/HeaderLabelContext";
 import { supabase } from "../../lib/supabase";
 import type { DashboardFilters } from "../FilterBar";
 import type { ScheduleViewData, NotificationLogItem } from "../../api";
+
+/**
+ * Trim full class monitoring last-run string from backend to minimal for UI.
+ * Backend sends e.g. "Wed, 19 Feb 2026, 10:30 AM EST"; we show "10:30 AM ET".
+ */
+function trimLastRunForDisplay(full: string | null): string | null {
+  if (!full || !full.trim()) return null;
+  const parts = full.split(",").map((p) => p.trim());
+  const last = parts[parts.length - 1];
+  if (!last) return full;
+  return last.replace(/\s+(EST|EDT)$/i, " ET");
+}
 
 interface MobileShellProps {
   showName: string | null;
@@ -40,6 +54,10 @@ interface MobileShellProps {
   showChat?: boolean;
 }
 
+/**
+ * Root mobile layout: slim header, bottom-sheet drawer, scrollable content,
+ * bottom tab bar, filter sheet, and all overlay panels.
+ */
 export const MobileShell: React.FC<MobileShellProps> = ({
   showName,
   date,
@@ -63,9 +81,13 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   // chatting immediately without waiting for overview data to load.
   const [activeTab, setActiveTab] = useState<MobileTab>(showChat ? "chat" : "overview");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
   const [notifSettingsOpen, setNotifSettingsOpen] = useState(false);
+
+  // Consume classMonitoringLastRun from context (set by DashboardView)
+  const { classMonitoringLastRun } = useContext(HeaderLabelContext);
 
   // ── Push notifications setup ──────────────────────────────────────────────
   const { user, farmId } = useAuth();
@@ -126,11 +148,20 @@ export const MobileShell: React.FC<MobileShellProps> = ({
       <MobileHeader
         showName={showName}
         date={date}
-        onDateChange={onDateChange}
         onFilterOpen={() => setFilterOpen(true)}
+        hasActiveFilters={hasActiveFilters}
+        onDrawerOpen={() => setDrawerOpen(true)}
+      />
+
+      {/* Bottom-sheet drawer for secondary actions */}
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        date={date}
+        onDateChange={onDateChange}
         onSync={() => setSyncModalOpen(true)}
         syncing={syncing}
-        hasActiveFilters={hasActiveFilters}
+        classMonitoringLastRun={trimLastRunForDisplay(classMonitoringLastRun)}
         onNotificationSettings={() => setNotifSettingsOpen(true)}
         isNotificationSubscribed={push.isSubscribed}
       />
