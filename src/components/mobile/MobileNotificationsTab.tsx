@@ -171,7 +171,7 @@ export const MobileNotificationsTab: React.FC<MobileNotificationsTabProps> = ({
                         </span>
                       </div>
                       {config.summary && (
-                        <p className="font-body text-xs text-text-primary leading-relaxed">
+                        <p className="font-body text-xs text-text-primary leading-relaxed whitespace-pre-line">
                           {config.summary}
                         </p>
                       )}
