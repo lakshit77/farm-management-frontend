@@ -121,18 +121,18 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
         </button>
 
         {/* ── Profile block ── */}
-        <div className="px-5 pt-12 pb-5 border-b border-border-card shrink-0">
-          {/* Large avatar circle */}
-          <div className="w-16 h-16 rounded-full bg-accent-green/20 flex items-center justify-center mb-3">
-            <span className="font-heading text-2xl font-bold text-accent-green-dark select-none">
+        <div className="px-5 pt-10 pb-4 border-b border-border-card shrink-0">
+          {/* Avatar circle */}
+          <div className="w-12 h-12 rounded-full bg-accent-green/20 flex items-center justify-center mb-2.5">
+            <span className="font-heading text-lg font-bold text-accent-green-dark select-none">
               {avatarLetter}
             </span>
           </div>
-          <p className="font-heading text-lg font-bold text-text-primary leading-tight truncate">
+          <p className="font-heading text-sm font-bold text-text-primary leading-tight truncate">
             {displayName}
           </p>
           <p
-            className="font-body text-sm text-text-secondary leading-tight truncate mt-0.5 select-all"
+            className="font-body text-xs text-text-secondary leading-tight truncate mt-0.5 select-all"
             title={user?.email ?? ""}
           >
             {user?.email ?? ""}
@@ -145,12 +145,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           {/* Date picker row */}
           <div className="relative">
             <div className="flex items-center gap-4 px-5 py-4 active:bg-background-primary transition-colors touch-manipulation">
-              <Calendar className="size-5 text-text-secondary shrink-0" aria-hidden />
+              <Calendar className="size-4 text-text-secondary shrink-0" aria-hidden />
               <div className="flex-1 min-w-0">
-                <p className="font-body text-base text-text-primary leading-tight">
+                <p className="font-body text-sm text-text-primary leading-tight">
                   Show Date
                 </p>
-                <p className="font-body text-sm text-text-secondary leading-tight mt-0.5">
+                <p className="font-body text-xs text-text-secondary leading-tight mt-0.5">
                   {dateLabel}
                 </p>
               </div>
@@ -184,15 +184,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             aria-label="Sync data"
           >
             {syncing ? (
-              <Loader2 className="size-5 text-accent-green-dark animate-spin shrink-0" aria-hidden />
+              <Loader2 className="size-4 text-accent-green-dark animate-spin shrink-0" aria-hidden />
             ) : (
-              <Activity className="size-5 text-text-secondary shrink-0" aria-hidden />
+              <Activity className="size-4 text-text-secondary shrink-0" aria-hidden />
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-body text-base text-text-primary leading-tight">
+              <p className="font-body text-sm text-text-primary leading-tight">
                 Sync Data
               </p>
-              <p className="font-body text-sm text-text-secondary leading-tight mt-0.5">
+              <p className="font-body text-xs text-text-secondary leading-tight mt-0.5">
                 {classMonitoringLastRun ? `Last run: ${classMonitoringLastRun}` : "Fetch latest updates"}
               </p>
             </div>
@@ -212,15 +212,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             aria-label="Notification settings"
           >
             {isNotificationSubscribed ? (
-              <Bell className="size-5 text-text-secondary shrink-0" aria-hidden />
+              <Bell className="size-4 text-text-secondary shrink-0" aria-hidden />
             ) : (
-              <BellOff className="size-5 text-text-secondary shrink-0" aria-hidden />
+              <BellOff className="size-4 text-text-secondary shrink-0" aria-hidden />
             )}
             <div className="flex-1 min-w-0">
-              <p className="font-body text-base text-text-primary leading-tight">
+              <p className="font-body text-sm text-text-primary leading-tight">
                 Notifications
               </p>
-              <p className="font-body text-sm text-text-secondary leading-tight mt-0.5">
+              <p className="font-body text-xs text-text-secondary leading-tight mt-0.5">
                 {isNotificationSubscribed ? "Subscribed on this device" : "Not subscribed"}
               </p>
             </div>
@@ -240,7 +240,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               onClose();
               signOut();
             }}
-            className="w-full h-12 rounded-full bg-background-primary border border-border-card font-body text-base font-medium text-text-primary active:bg-border-card transition-colors touch-manipulation flex items-center justify-center gap-2"
+            className="w-full h-11 rounded-full bg-background-primary border border-border-card font-body text-sm font-medium text-text-primary active:bg-border-card transition-colors touch-manipulation flex items-center justify-center gap-2"
             aria-label="Sign out"
           >
             <LogOut className="size-4 text-text-secondary" aria-hidden />

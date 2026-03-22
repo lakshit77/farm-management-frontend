@@ -150,7 +150,7 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
     return (
       <div className="flex flex-col h-full bg-background-primary">
         <Header onClose={onClose} />
-        <div className="flex-1 flex flex-col items-center justify-center px-6 text-center gap-3">
+        <div className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 text-center gap-3">
           <BellOff className="size-10 text-text-secondary opacity-50" />
           <p className="text-sm text-text-secondary">
             Push notifications are not supported in this browser.
@@ -169,8 +169,11 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
     <div className="flex flex-col h-full bg-background-primary">
       <Header onClose={onClose} />
 
-      <div className="flex-1 overflow-y-auto pb-8">
-        <div className="px-4 pt-4 space-y-4">
+      {/* min-h-0 is required on a flex-1 child to correctly constrain the
+          scroll region — without it the div grows beyond the flex container
+          causing scroll to get stuck. Bottom padding clears the safe area. */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ paddingBottom: "env(safe-area-inset-bottom, 1rem)" }}>
+        <div className="px-4 pt-4 space-y-4 pb-6">
 
           {/* Master toggle section */}
           <Section title="Push Notifications">
@@ -329,7 +332,7 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
 
           {/* Info note about preferences scope */}
           {preferences && (
-            <p className="text-xs text-text-secondary text-center px-2">
+            <p className="text-xs text-text-secondary text-center px-2 pb-2">
               Category preferences apply to all your devices.
               The master toggle above applies to this device only.
             </p>

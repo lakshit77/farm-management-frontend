@@ -124,7 +124,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
     <div className="min-h-screen bg-background-primary flex flex-col">
       {/* Notification settings full-screen panel */}
       {notifSettingsOpen && (
-        <div className="fixed inset-0 z-[65] bg-background-primary flex flex-col">
+        <div className="fixed inset-0 z-[80] bg-background-primary flex flex-col">
           <NotificationSettingsPanel
             push={push}
             onClose={() => setNotifSettingsOpen(false)}
