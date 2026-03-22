@@ -28,6 +28,7 @@ import { ChatChannelListItem, type ChannelEntry, type ChannelKey } from "../comp
 
 // ── Loading / error states ─────────────────────────────────────────────────────
 
+/** Shown only before the Stream WebSocket has connected (Phase 1 pending). */
 function LoadingScreen() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 bg-background-primary">
@@ -51,14 +52,36 @@ function ErrorScreen({ message }: { message: string }) {
   );
 }
 
+/**
+ * Skeleton rows displayed in the channel list while Phase 2
+ * (channel watch) is still in progress after the WebSocket connects.
+ */
+function ChannelListSkeleton() {
+  return (
+    <div className="flex-1 overflow-y-auto divide-y divide-border-card/50 animate-pulse">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-4">
+          <div className="w-11 h-11 rounded-full bg-border-card shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 bg-border-card rounded w-2/3" />
+            <div className="h-2.5 bg-border-card rounded w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Channel list screen ────────────────────────────────────────────────────────
 
 interface ChannelListScreenProps {
   channels: ChannelEntry[];
   onSelect: (entry: ChannelEntry) => void;
+  /** When true, channels are still being fetched — show skeleton rows. */
+  loading?: boolean;
 }
 
-function ChannelListScreen({ channels, onSelect }: ChannelListScreenProps) {
+function ChannelListScreen({ channels, onSelect, loading = false }: ChannelListScreenProps) {
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header — safe-area-top so it clears the notch */}
@@ -69,20 +92,24 @@ function ChannelListScreen({ channels, onSelect }: ChannelListScreenProps) {
         </div>
       </div>
 
-      {/* Channel list — pad bottom so last item clears the tab bar */}
-      <div
-        className="flex-1 overflow-y-auto divide-y divide-border-card/50"
-        style={{ paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px))" }}
-      >
-        {channels.map((entry) => (
-          <ChatChannelListItem
-            key={entry.key}
-            entry={entry}
-            isActive={false}
-            onClick={() => onSelect(entry)}
-          />
-        ))}
-      </div>
+      {/* Channel list — skeleton while channels are being watched, real list once ready */}
+      {loading ? (
+        <ChannelListSkeleton />
+      ) : (
+        <div
+          className="flex-1 overflow-y-auto divide-y divide-border-card/50"
+          style={{ paddingBottom: "calc(3.5rem + env(safe-area-inset-bottom, 0px))" }}
+        >
+          {channels.map((entry) => (
+            <ChatChannelListItem
+              key={entry.key}
+              entry={entry}
+              isActive={false}
+              onClick={() => onSelect(entry)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -133,7 +160,7 @@ interface MobileChatViewProps {
 }
 
 export function MobileChatView({ onExitChat: _onExitChat, onConversationChange }: MobileChatViewProps) {
-  const { isReady, error, allTeamChannel, adminChannel, dmChannel } = useChat();
+  const { clientReady, isReady, error, allTeamChannel, adminChannel, dmChannel } = useChat();
   const { role } = useAuth();
 
   const [activeEntry, setActiveEntry] = useState<ChannelEntry | null>(null);
@@ -156,7 +183,8 @@ export function MobileChatView({ onExitChat: _onExitChat, onConversationChange }
     { key: "dm", label: "Personal Assistant", channel: dmChannel },
   ];
 
-  if (!isReady && !error) {
+  // Phase 1 not yet complete — Stream WebSocket not connected yet
+  if (!clientReady && !error) {
     return <LoadingScreen />;
   }
 
@@ -164,7 +192,7 @@ export function MobileChatView({ onExitChat: _onExitChat, onConversationChange }
     return <ErrorScreen message={error} />;
   }
 
-  // Conversation overlay
+  // Conversation overlay — only openable once channels are ready (Phase 2)
   if (activeEntry && activeEntry.channel) {
     return (
       <ConversationScreen
@@ -175,12 +203,14 @@ export function MobileChatView({ onExitChat: _onExitChat, onConversationChange }
     );
   }
 
-  // Channel list — fills the fixed overlay provided by MobileShell
+  // Channel list — fills the fixed overlay provided by MobileShell.
+  // Shows skeleton rows while Phase 2 (channel watch) is still in progress.
   return (
     <div className="flex flex-col h-full">
       <ChannelListScreen
         channels={channels}
         onSelect={openConversation}
+        loading={!isReady}
       />
     </div>
   );

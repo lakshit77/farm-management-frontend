@@ -47,11 +47,32 @@ function NoConversationPlaceholder() {
   );
 }
 
+/** Shown only before the Stream WebSocket has connected (Phase 1 pending). */
 function LoadingState() {
   return (
     <div className="flex-1 flex flex-col items-center justify-center gap-3 bg-background-primary">
       <Loader2 className="size-8 animate-spin text-accent-green" />
       <p className="font-body text-sm text-text-secondary">Connecting to chat…</p>
+    </div>
+  );
+}
+
+/**
+ * Sidebar skeleton shown while Phase 2 (channel watch) is still in progress.
+ * Gives the impression that channels are loading rather than blocking the whole UI.
+ */
+function ChannelListSkeleton() {
+  return (
+    <div className="flex-1 overflow-y-auto divide-y divide-border-card/50 animate-pulse">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="flex items-center gap-3 px-4 py-3">
+          <div className="w-10 h-10 rounded-full bg-border-card shrink-0" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 bg-border-card rounded w-2/3" />
+            <div className="h-2.5 bg-border-card rounded w-1/2" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -74,9 +95,11 @@ interface SidebarProps {
   channels: ChannelEntry[];
   activeKey: ChannelKey | null;
   onSelect: (key: ChannelKey) => void;
+  /** When true, channels are still being fetched — show skeleton rows. */
+  loading?: boolean;
 }
 
-function DesktopSidebar({ channels, activeKey, onSelect }: SidebarProps) {
+function DesktopSidebar({ channels, activeKey, onSelect, loading = false }: SidebarProps) {
   return (
     <aside className="w-80 shrink-0 flex flex-col border-r border-border-card bg-white h-full">
       {/* Sidebar header — same height as ChatHeader (56px) */}
@@ -87,17 +110,21 @@ function DesktopSidebar({ channels, activeKey, onSelect }: SidebarProps) {
         </div>
       </div>
 
-      {/* Channel list */}
-      <div className="flex-1 overflow-y-auto divide-y divide-border-card/50">
-        {channels.map((entry) => (
-          <ChatChannelListItem
-            key={entry.key}
-            entry={entry}
-            isActive={activeKey === entry.key}
-            onClick={() => onSelect(entry.key)}
-          />
-        ))}
-      </div>
+      {/* Channel list — skeleton while channels are being watched */}
+      {loading ? (
+        <ChannelListSkeleton />
+      ) : (
+        <div className="flex-1 overflow-y-auto divide-y divide-border-card/50">
+          {channels.map((entry) => (
+            <ChatChannelListItem
+              key={entry.key}
+              entry={entry}
+              isActive={activeKey === entry.key}
+              onClick={() => onSelect(entry.key)}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Footer — same height as the input bar (py-2.5 + h-10 buttons = ~60px) */}
       <div className="flex items-center justify-center px-5 border-t border-border-card h-[60px] shrink-0">
@@ -112,7 +139,7 @@ function DesktopSidebar({ channels, activeKey, onSelect }: SidebarProps) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export function ChatView(): React.ReactElement {
-  const { isReady, error, allTeamChannel, adminChannel, dmChannel } = useChat();
+  const { clientReady, isReady, error, allTeamChannel, adminChannel, dmChannel } = useChat();
   const { role } = useAuth();
 
   const [activeKey, setActiveKey] = useState<ChannelKey>("all-team");
@@ -131,7 +158,8 @@ export function ChatView(): React.ReactElement {
   // Height: fill viewport below the dashboard toolbar (~120px header + toolbar)
   const containerHeight = "calc(100vh - 130px)";
 
-  if (!isReady && !error) {
+  // Phase 1 not yet complete — Stream WebSocket not connected yet
+  if (!clientReady && !error) {
     return (
       <div
         className="flex overflow-hidden rounded-xl border border-border-card shadow-card bg-background-primary"
@@ -153,16 +181,20 @@ export function ChatView(): React.ReactElement {
     );
   }
 
+  // Phase 1 complete — render the full layout immediately.
+  // Phase 2 (isReady) controls whether the channel list or skeleton is shown
+  // and whether an active channel can be selected.
   return (
     <div
       className="flex overflow-hidden rounded-xl border border-border-card shadow-card"
       style={{ height: containerHeight }}
     >
-      {/* Left sidebar */}
+      {/* Left sidebar — skeleton shown while channels are still being watched */}
       <DesktopSidebar
         channels={channels}
         activeKey={activeKey}
         onSelect={setActiveKey}
+        loading={!isReady}
       />
 
       {/* Right conversation panel */}
