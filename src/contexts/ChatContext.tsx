@@ -103,6 +103,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user || !farmId) return;
 
+    // Capture as a narrowed string so TypeScript knows it's non-null inside
+    // the async init() closure, where the outer guard no longer applies.
+    const resolvedFarmId: string = farmId;
+
     let cancelled = false;
     const streamClient = getStreamChatClient();
 
@@ -162,7 +166,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
         // 3. Try the localStorage cache first to avoid a network round-trip on
         //    repeat visits (the common case after the very first login).
-        let channelIds = readChannelCache(farmId, user!.id);
+        let channelIds = readChannelCache(resolvedFarmId, user!.id);
 
         if (!channelIds) {
           // Cache miss — ask the backend to create/verify channels
@@ -187,7 +191,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           channelIds = { all_team_channel_id, admin_channel_id, dm_channel_id };
 
           // Persist for future visits
-          writeChannelCache(farmId, user!.id, channelIds);
+          writeChannelCache(resolvedFarmId, user!.id, channelIds);
         }
 
         if (cancelled) return;
@@ -224,7 +228,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
           // On failure, clear the channel cache so the next attempt re-fetches
           // from the backend rather than retrying a potentially stale cache.
-          if (user && farmId) clearChannelCache(farmId, user.id);
+          if (user) clearChannelCache(resolvedFarmId, user.id);
         }
       }
     }
