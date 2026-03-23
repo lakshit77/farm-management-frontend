@@ -236,6 +236,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.id, farmId, role]);
 
+  // When displayName changes on an already-connected client (e.g. an admin updates
+  // user_metadata mid-session), push the updated name to Stream without tearing down
+  // the WebSocket connection. The main init effect intentionally omits displayName
+  // from its deps to avoid reconnecting the entire client on a name-only change.
+  useEffect(() => {
+    if (!client || !user) return;
+    const name = displayName || user.id;
+    client.upsertUser({ id: user.id, name }).catch((err: unknown) => {
+      console.error("[ChatContext] Failed to update Stream display name:", err);
+    });
+  }, [displayName]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Disconnect Stream client when user logs out
   useEffect(() => {
     if (!user && client) {
