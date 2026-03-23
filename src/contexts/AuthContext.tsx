@@ -11,6 +11,12 @@ interface AuthContextValue {
   /** Per-user chat override from Supabase user_metadata.enable_chat.
    *  true/false = explicit override; null = not set, fall back to ENABLE_CHAT in config. */
   enableChat: boolean | null
+  /**
+   * The preferred display name for the current user.
+   * Resolves to `user_metadata.display_name` when set, otherwise falls back
+   * to the user's email address, and finally to `null` when no user is signed in.
+   */
+  displayName: string | null
   loading: boolean
   signOut: () => Promise<void>
 }
@@ -22,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null)
   const [farmId, setFarmId] = useState<string | null>(null)
   const [enableChat, setEnableChat] = useState<boolean | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   function applySession(session: Session | null) {
@@ -29,6 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(u)
     setRole((u?.user_metadata?.role as UserRole) ?? null)
     setFarmId((u?.user_metadata?.farm_id as string) ?? null)
+
+    // Prefer the explicit display_name set in user_metadata; fall back to email.
+    const metaDisplayName = u?.user_metadata?.display_name as string | undefined
+    setDisplayName(metaDisplayName?.trim() || u?.email || null)
 
     // enable_chat in metadata can be boolean true/false, string "true"/"false", or absent.
     // Supabase sometimes stores JSON booleans as strings depending on how they were set.
@@ -60,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, role, farmId, enableChat, loading, signOut }}>
+    <AuthContext.Provider value={{ user, role, farmId, enableChat, displayName, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   )

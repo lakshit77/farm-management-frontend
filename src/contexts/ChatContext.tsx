@@ -90,7 +90,7 @@ function clearChannelCache(farmId: string, userId: string): void {
 // ── Provider ───────────────────────────────────────────────────────────────────
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const { user, role, farmId } = useAuth();
+  const { user, role, farmId, displayName } = useAuth();
 
   const [client, setClient] = useState<StreamChat | null>(null);
   const [allTeamChannel, setAllTeamChannel] = useState<StreamChannel | null>(null);
@@ -125,10 +125,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           } as HeadersInit,
           body: JSON.stringify({
             user_id: user!.id,
-            user_name:
-              user!.user_metadata?.full_name ||
-              user!.email ||
-              user!.id,
+            // displayName resolves to display_name metadata → email → null; fall back to id.
+            user_name: displayName || user!.id,
             role: role ?? "employee",
             farm_id: farmId,
           }),
@@ -146,10 +144,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           await streamClient.connectUser(
             {
               id: user!.id,
-              name:
-                user!.user_metadata?.full_name ||
-                user!.email ||
-                user!.id,
+              // displayName resolves to display_name metadata → email → null; fall back to id.
+              name: displayName || user!.id,
             },
             token
           );

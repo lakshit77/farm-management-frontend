@@ -25,7 +25,10 @@ function formatDateForDisplay(dateStr: string): string {
   }
 }
 
-/** Derive a display name from an email address (part before @). */
+/**
+ * Derive a friendly display name from an email address (part before @).
+ * Used as a last resort when neither display_name nor email yields a usable label.
+ */
 function nameFromEmail(email: string | null | undefined): string {
   if (!email) return "User";
   const local = email.split("@")[0] ?? "";
@@ -74,11 +77,13 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   onNotificationSettings,
   isNotificationSubscribed,
 }) => {
-  const { user, signOut } = useAuth();
+  const { user, displayName: authDisplayName, signOut } = useAuth();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dateLabel = formatDateForDisplay(date);
-  const displayName = nameFromEmail(user?.email);
-  const avatarLetter = (user?.email?.[0] ?? "U").toUpperCase();
+  // Prefer the resolved display name from auth context (display_name → email);
+  // fall back to the email-derived friendly name when neither is available.
+  const displayName = authDisplayName ?? nameFromEmail(user?.email);
+  const avatarLetter = (authDisplayName?.[0] ?? user?.email?.[0] ?? "U").toUpperCase();
 
   // Close on Escape key
   useEffect(() => {
@@ -131,12 +136,15 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
           <p className="font-heading text-sm font-bold text-text-primary leading-tight truncate">
             {displayName}
           </p>
-          <p
-            className="font-body text-xs text-text-secondary leading-tight truncate mt-0.5 select-all"
-            title={user?.email ?? ""}
-          >
-            {user?.email ?? ""}
-          </p>
+          {/* Show email as secondary line only when display_name is set and differs from email */}
+          {user?.email && user.email !== authDisplayName && (
+            <p
+              className="font-body text-xs text-text-secondary leading-tight truncate mt-0.5 select-all"
+              title={user.email}
+            >
+              {user.email}
+            </p>
+          )}
         </div>
 
         {/* ── Menu rows ── */}

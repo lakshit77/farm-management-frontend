@@ -19,7 +19,7 @@ interface DesktopSidebarProps {
  * Slide-in sidebar panel for desktop, triggered by the hamburger button in the header.
  *
  * Contains secondary actions that don't need to be permanently visible:
- * - User profile (email)
+ * - User profile (display name + email)
  * - Sync Data button + last-run timestamp
  * - Sign Out button
  *
@@ -32,7 +32,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   classMonitorLoading,
   onSyncClick,
 }) => {
-  const { user, signOut } = useAuth();
+  const { user, displayName, signOut } = useAuth();
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
@@ -110,13 +110,24 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             >
               Signed in as
             </p>
-            {user?.email ? (
-              <p
-                className="font-body text-sm text-text-primary bg-background-primary border border-border-card rounded-lg px-3 py-2 select-all break-all"
-                title={user.email}
-              >
-                {user.email}
-              </p>
+            {displayName ? (
+              <div className="bg-background-primary border border-border-card rounded-lg px-3 py-2">
+                <p
+                  className="font-body text-sm font-medium text-text-primary break-all"
+                  title={displayName}
+                >
+                  {displayName}
+                </p>
+                {/* Show email as secondary line only when display_name differs from email */}
+                {user?.email && user.email !== displayName && (
+                  <p
+                    className="font-body text-xs text-text-secondary break-all mt-0.5 select-all"
+                    title={user.email}
+                  >
+                    {user.email}
+                  </p>
+                )}
+              </div>
             ) : (
               <p className="font-body text-sm text-text-secondary italic">Unknown user</p>
             )}
