@@ -16,8 +16,10 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { X, Calendar, RefreshCw, Loader2 } from "lucide-react";
+import { X, Calendar, RefreshCw, Loader2, Users } from "lucide-react";
 import { useTasks, type CreateTaskInput } from "../../contexts/TaskContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { AssigneePicker } from "./AssigneePicker";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -162,6 +164,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   onClose,
 }) => {
   const { createTask } = useTasks();
+  const { role, user } = useAuth();
+  const isAdmin = role === "admin";
 
   const [description, setDescription] = useState<string>("");
   const [dateStr, setDateStr] = useState<string>(initialDate ?? "");
@@ -172,6 +176,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   const [repeatType, setRepeatType] = useState<RepeatType>("weekly");
   const [selectedWeekDays, setSelectedWeekDays] = useState<Set<number>>(new Set());
   const [selectedMonthDays, setSelectedMonthDays] = useState<Set<number>>(new Set());
+
+  // Admin-only: assignee selection (pre-seed with current user)
+  const [selectedAssignees, setSelectedAssignees] = useState<Set<string>>(
+    () => new Set(user?.id ? [user.id] : [])
+  );
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -233,6 +242,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       }
     }
 
+    if (isAdmin && selectedAssignees.size === 0) {
+      setValidationError("Please select at least one assignee.");
+      return;
+    }
+
     const cron = isRecurring
       ? buildCron(repeatType, selectedWeekDays, selectedMonthDays, timeStr)
       : null;
@@ -242,6 +256,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       due_date: dateStr ? buildDueDateISO(dateStr, timeStr) : null,
       is_recurring: isRecurring,
       recurrence_cron: cron,
+      assigneeIds: isAdmin ? [...selectedAssignees] : undefined,
     };
 
     setSubmitting(true);
@@ -339,6 +354,29 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               )}
             </div>
           </div>
+
+          {/* ---------------------------------------------------------------- */}
+          {/* Assignee picker — admin only                                      */}
+          {/* ---------------------------------------------------------------- */}
+          {isAdmin && (
+            <div className="mb-4">
+              <label className="flex items-center gap-1.5 mb-1.5">
+                <Users className="size-3.5 text-text-secondary shrink-0" aria-hidden />
+                <span className="font-body text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                  Assign to
+                </span>
+                {selectedAssignees.size > 0 && (
+                  <span className="ml-auto font-body text-xs text-accent-green-dark font-semibold">
+                    {selectedAssignees.size} selected
+                  </span>
+                )}
+              </label>
+              <AssigneePicker
+                selectedIds={selectedAssignees}
+                onChange={setSelectedAssignees}
+              />
+            </div>
+          )}
 
           {/* ---------------------------------------------------------------- */}
           {/* Recurring toggle                                                  */}

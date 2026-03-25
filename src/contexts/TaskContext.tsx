@@ -67,6 +67,11 @@ export interface CreateTaskInput {
   is_recurring: boolean;
   /** Standard 5-field cron expression or null */
   recurrence_cron: string | null;
+  /**
+   * User IDs to assign this task to. Defaults to just the creator (current user)
+   * when empty or not provided. Admins can pass multiple IDs here.
+   */
+  assigneeIds?: string[];
 }
 
 /** Input payload for updating an existing task's fields. */
@@ -76,6 +81,19 @@ export interface UpdateTaskInput {
   due_date: string | null;
   is_recurring: boolean;
   recurrence_cron: string | null;
+  /**
+   * Full replacement list of assignee user IDs. When provided by an admin,
+   * the existing assignees are diffed: removed users have their row deleted,
+   * new users get a fresh 'pending' row inserted. Non-admins leave this null.
+   */
+  assigneeIds?: string[] | null;
+}
+
+/** A farm user returned by the get_farm_users RPC. */
+export interface FarmUser {
+  id: string;
+  display_name: string;
+  email: string;
 }
 
 interface TaskContextValue {
@@ -118,6 +136,12 @@ interface TaskContextValue {
    * @param taskId - The tasks.id to delete
    */
   deleteTask: (taskId: string) => Promise<void>;
+  /**
+   * Fetch all users belonging to the same farm as the current user.
+   * Uses the `get_farm_users` Supabase RPC (requires SECURITY DEFINER function).
+   * Returns an empty array on error so the UI can degrade gracefully.
+   */
+  fetchFarmUsers: () => Promise<FarmUser[]>;
 }
 
 // ---------------------------------------------------------------------------
@@ -353,14 +377,16 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * Create a new task in `tasks`, then immediately assign it to the current
-   * user via `task_assignees`, then refresh the task list.
+   * Create a new task in `tasks`, then assign it to the specified users
+   * (or just the creator when no assignees are provided), then refresh.
+   *
+   * Admins can pass `input.assigneeIds` with multiple user IDs.
+   * Non-admins always assign to themselves only.
    */
   const createTask = useCallback(
     async (input: CreateTaskInput): Promise<void> => {
       if (!user?.id) return;
 
-      // Resolve farm_id from user metadata
       const farmId = (user.user_metadata?.farm_id as string) ?? null;
 
       // 1. Insert the task row
@@ -382,14 +408,21 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // 2. Assign to the current user
+      // 2. Build the list of users to assign: use provided list or fall back to self
+      const targetIds =
+        input.assigneeIds && input.assigneeIds.length > 0
+          ? input.assigneeIds
+          : [user.id];
+
+      const assigneeRows = targetIds.map((uid) => ({
+        task_id: taskData.id,
+        user_id: uid,
+        status: "pending",
+      }));
+
       const { error: assignError } = await supabase
         .from("task_assignees")
-        .insert({
-          task_id: taskData.id,
-          user_id: user.id,
-          status: "pending",
-        });
+        .insert(assigneeRows);
 
       if (assignError) {
         setError(assignError.message);
@@ -405,9 +438,14 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   /**
    * Update an existing task row's mutable fields (description, due_date,
    * is_recurring, recurrence_cron), then refresh the task list.
+   *
+   * When `input.assigneeIds` is provided (admin flow), the assignee list is
+   * reconciled: users no longer in the list are removed, new users are added
+   * with status 'pending'. Existing assignees (and their statuses) are preserved.
    */
   const updateTask = useCallback(
     async (input: UpdateTaskInput): Promise<void> => {
+      // 1. Update task fields
       const { error: updateError } = await supabase
         .from("tasks")
         .update({
@@ -421,6 +459,54 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       if (updateError) {
         setError(updateError.message);
         return;
+      }
+
+      // 2. Reconcile assignees when the caller provides a new list
+      if (input.assigneeIds != null) {
+        const newIds = new Set(input.assigneeIds);
+
+        // Fetch current assignees for this task
+        const { data: currentRows, error: fetchErr } = await supabase
+          .from("task_assignees")
+          .select("id, user_id")
+          .eq("task_id", input.taskId);
+
+        if (fetchErr) {
+          setError(fetchErr.message);
+          return;
+        }
+
+        const existingMap = new Map(
+          (currentRows ?? []).map((r) => [r.user_id as string, r.id as string])
+        );
+
+        // Delete rows for users no longer in the list
+        const toRemove = [...existingMap.entries()]
+          .filter(([uid]) => !newIds.has(uid))
+          .map(([, rowId]) => rowId);
+
+        if (toRemove.length > 0) {
+          const { error: delErr } = await supabase
+            .from("task_assignees")
+            .delete()
+            .in("id", toRemove);
+          if (delErr) {
+            setError(delErr.message);
+            return;
+          }
+        }
+
+        // Insert rows for newly-added users
+        const toAdd = [...newIds].filter((uid) => !existingMap.has(uid));
+        if (toAdd.length > 0) {
+          const { error: addErr } = await supabase
+            .from("task_assignees")
+            .insert(toAdd.map((uid) => ({ task_id: input.taskId, user_id: uid, status: "pending" })));
+          if (addErr) {
+            setError(addErr.message);
+            return;
+          }
+        }
       }
 
       await fetchTasks();
@@ -460,6 +546,32 @@ export function TaskProvider({ children }: { children: ReactNode }) {
     [fetchTasks]
   );
 
+  /**
+   * Fetch all users belonging to the current user's farm via the
+   * `get_farm_users` Postgres RPC. Returns an empty array on any error
+   * so the UI degrades gracefully if the function hasn't been created yet.
+   */
+  const fetchFarmUsers = useCallback(async (): Promise<FarmUser[]> => {
+    const farmId = (user?.user_metadata?.farm_id as string) ?? null;
+    if (!farmId) return [];
+
+    try {
+      const { data, error: rpcError } = await supabase.rpc("get_farm_users", {
+        p_farm_id: farmId,
+      });
+
+      if (rpcError) {
+        console.error("fetchFarmUsers RPC error:", rpcError.message);
+        return [];
+      }
+
+      return (data ?? []) as FarmUser[];
+    } catch (err) {
+      console.error("fetchFarmUsers unexpected error:", err);
+      return [];
+    }
+  }, [user?.user_metadata?.farm_id]);
+
   // Fetch on mount and whenever the authenticated user changes.
   useEffect(() => {
     void fetchTasks();
@@ -471,7 +583,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
 
   return (
     <TaskContext.Provider
-      value={{ tasks, loading, error, pendingCount, fetchTasks, updateAssigneeStatus, createTask, updateTask, deleteTask }}
+      value={{ tasks, loading, error, pendingCount, fetchTasks, updateAssigneeStatus, createTask, updateTask, deleteTask, fetchFarmUsers }}
     >
       {children}
     </TaskContext.Provider>

@@ -22,7 +22,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
   Loader2,
   Plus,
   RefreshCw,
@@ -277,19 +276,15 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ onClose }) => {
   const weekDays = useMemo(() => getWeekDays(weekStart), [weekStart]);
 
   const goToPrevWeek = (): void => {
-    setWeekStart((prev) => {
-      const d = new Date(prev);
-      d.setDate(d.getDate() - 7);
-      return d;
-    });
+    setWeekStart((prev) =>
+      new Date(Date.UTC(prev.getUTCFullYear(), prev.getUTCMonth(), prev.getUTCDate() - 7))
+    );
   };
 
   const goToNextWeek = (): void => {
-    setWeekStart((prev) => {
-      const d = new Date(prev);
-      d.setDate(d.getDate() + 7);
-      return d;
-    });
+    setWeekStart((prev) =>
+      new Date(Date.UTC(prev.getUTCFullYear(), prev.getUTCMonth(), prev.getUTCDate() + 7))
+    );
   };
 
   /**
@@ -395,7 +390,6 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ onClose }) => {
     [tasksOnSelectedDate]
   );
 
-  const hasAnyTasks = tasks.length > 0;
   const monthLabel = formatMonthYear(weekDays[0]);
 
   const hasTasks = (day: Date): boolean =>
@@ -513,7 +507,7 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ onClose }) => {
                       : "var(--color-text-primary, #111)",
                   }}
                 >
-                  {day.getDate()}
+                  {day.getUTCDate()}
                 </span>
                 <span
                   className="w-1 h-1 rounded-full"
@@ -554,33 +548,8 @@ export const TasksPanel: React.FC<TasksPanelProps> = ({ onClose }) => {
           </div>
         )}
 
-        {/* Empty state — no tasks assigned at all */}
-        {!loading && !hasAnyTasks && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
-            <div className="w-16 h-16 rounded-full bg-border-card flex items-center justify-center">
-              <ClipboardList className="size-8 text-text-secondary opacity-60" aria-hidden />
-            </div>
-            <div>
-              <p className="font-heading text-base font-semibold text-text-primary mb-1">
-                No tasks assigned
-              </p>
-              <p className="font-body text-sm text-text-secondary max-w-xs">
-                Tasks assigned to you will appear here.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => void fetchTasks()}
-              className="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg font-body text-sm font-medium text-accent-green-dark border border-accent-green/30 bg-accent-green/5 hover:bg-accent-green/10 transition-colors touch-manipulation"
-            >
-              <RefreshCw className="size-3.5" aria-hidden />
-              Refresh
-            </button>
-          </div>
-        )}
-
         {/* Main content */}
-        {!loading && hasAnyTasks && (
+        {!loading && (
           <div className="pb-6">
             {/* Overdue section */}
             {overdueTasks.length > 0 && (

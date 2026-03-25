@@ -13,9 +13,12 @@
  * before permanently removing the task.
  */
 
-import React, { useState, useMemo } from "react";
-import { X, Calendar, RefreshCw, Loader2, Trash2 } from "lucide-react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
+import { X, Calendar, RefreshCw, Loader2, Trash2, Users } from "lucide-react";
 import { useTasks, type AssignedTask, type UpdateTaskInput } from "../../contexts/TaskContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { supabase } from "../../lib/supabase";
+import { AssigneePicker } from "./AssigneePicker";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -218,6 +221,8 @@ interface EditTaskModalProps {
  */
 export const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose }) => {
   const { updateTask, deleteTask } = useTasks();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
 
   // Parse stored values into form state
   const { dateStr: initDateStr, timeStr: initTimeStr } = parseDueDate(task.task.due_date);
@@ -232,6 +237,27 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose }) =
   const [repeatType, setRepeatType] = useState<RepeatType>(initRepeatType);
   const [selectedWeekDays, setSelectedWeekDays] = useState<Set<number>>(initWeekDays);
   const [selectedMonthDays, setSelectedMonthDays] = useState<Set<number>>(initMonthDays);
+
+  // Admin-only: load the current assignees for this task from task_assignees
+  const [selectedAssignees, setSelectedAssignees] = useState<Set<string>>(new Set());
+  const [loadingAssignees, setLoadingAssignees] = useState<boolean>(false);
+
+  const loadCurrentAssignees = useCallback(async (): Promise<void> => {
+    if (!isAdmin) return;
+    setLoadingAssignees(true);
+    const { data, error } = await supabase
+      .from("task_assignees")
+      .select("user_id")
+      .eq("task_id", task.task.id);
+    if (!error && data) {
+      setSelectedAssignees(new Set(data.map((r) => r.user_id as string)));
+    }
+    setLoadingAssignees(false);
+  }, [isAdmin, task.task.id]);
+
+  useEffect(() => {
+    void loadCurrentAssignees();
+  }, [loadCurrentAssignees]);
 
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [deleting, setDeleting] = useState<boolean>(false);
@@ -292,6 +318,11 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose }) =
       }
     }
 
+    if (isAdmin && selectedAssignees.size === 0) {
+      setValidationError("Please select at least one assignee.");
+      return;
+    }
+
     const cron = isRecurring
       ? buildCron(repeatType, selectedWeekDays, selectedMonthDays, timeStr)
       : null;
@@ -302,6 +333,7 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose }) =
       due_date: dateStr ? buildDueDateISO(dateStr, timeStr) : null,
       is_recurring: isRecurring,
       recurrence_cron: cron,
+      assigneeIds: isAdmin ? [...selectedAssignees] : null,
     };
 
     setSubmitting(true);
@@ -409,6 +441,34 @@ export const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, onClose }) =
               )}
             </div>
           </div>
+
+          {/* Assignee picker — admin only */}
+          {isAdmin && (
+            <div className="mb-4">
+              <label className="flex items-center gap-1.5 mb-1.5">
+                <Users className="size-3.5 text-text-secondary shrink-0" aria-hidden />
+                <span className="font-body text-xs font-semibold text-text-secondary uppercase tracking-wide">
+                  Assign to
+                </span>
+                {!loadingAssignees && selectedAssignees.size > 0 && (
+                  <span className="ml-auto font-body text-xs text-accent-green-dark font-semibold">
+                    {selectedAssignees.size} selected
+                  </span>
+                )}
+              </label>
+              {loadingAssignees ? (
+                <div className="flex items-center justify-center py-4 gap-2">
+                  <Loader2 className="size-4 animate-spin text-accent-green" aria-hidden />
+                  <span className="font-body text-xs text-text-secondary">Loading assignees…</span>
+                </div>
+              ) : (
+                <AssigneePicker
+                  selectedIds={selectedAssignees}
+                  onChange={setSelectedAssignees}
+                />
+              )}
+            </div>
+          )}
 
           {/* Recurring toggle */}
           <div className="mb-4">
