@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
-import { Activity, LogOut, X, Loader2 } from "lucide-react";
+import { Activity, ClipboardList, LogOut, X, Loader2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
+import { useTasks } from "../contexts/TaskContext";
 
 interface DesktopSidebarProps {
   /** Whether the sidebar panel is visible. */
@@ -13,6 +14,8 @@ interface DesktopSidebarProps {
   classMonitorLoading: boolean;
   /** Handler to open the sync confirmation modal. */
   onSyncClick: () => void;
+  /** Handler to open the Tasks full-screen panel. */
+  onTasksOpen: () => void;
 }
 
 /**
@@ -31,8 +34,10 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   classMonitoringLastRun,
   classMonitorLoading,
   onSyncClick,
+  onTasksOpen,
 }) => {
   const { user, displayName, signOut } = useAuth();
+  const { pendingCount } = useTasks();
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape key
@@ -161,6 +166,39 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
             {classMonitoringLastRun && (
               <p className="mt-1.5 font-body text-xs text-text-secondary text-center">
                 Last run: {classMonitoringLastRun}
+              </p>
+            )}
+          </section>
+          {/* Tasks section */}
+          <section aria-labelledby="sidebar-tasks-heading">
+            <p
+              id="sidebar-tasks-heading"
+              className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-secondary mb-2"
+            >
+              Tasks
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onTasksOpen();
+              }}
+              className="w-full inline-flex items-center justify-between gap-2 h-9 font-body text-sm font-medium text-text-primary bg-surface-card border border-border-card hover:bg-background-primary rounded-lg px-3.5 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
+              aria-label="Open My Tasks panel"
+            >
+              <span className="inline-flex items-center gap-2">
+                <ClipboardList className="size-3.5 shrink-0 text-text-secondary" aria-hidden />
+                <span>My Tasks</span>
+              </span>
+              {pendingCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-warm-orange-brown text-white text-[11px] font-bold shrink-0">
+                  {pendingCount > 99 ? "99+" : pendingCount}
+                </span>
+              )}
+            </button>
+            {pendingCount > 0 && (
+              <p className="mt-1.5 font-body text-xs text-text-secondary text-center">
+                {pendingCount} pending task{pendingCount !== 1 ? "s" : ""}
               </p>
             )}
           </section>

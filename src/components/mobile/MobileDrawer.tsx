@@ -5,11 +5,13 @@ import {
   BellOff,
   Calendar,
   ChevronRight,
+  ClipboardList,
   Loader2,
   LogOut,
   X,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
+import { useTasks } from "../../contexts/TaskContext";
 
 function formatDateForDisplay(dateStr: string): string {
   try {
@@ -57,6 +59,8 @@ interface MobileDrawerProps {
   onNotificationSettings: () => void;
   /** Whether push notifications are subscribed on this device. */
   isNotificationSubscribed: boolean;
+  /** Opens the TasksPanel full-screen overlay. */
+  onTasksOpen: () => void;
 }
 
 /**
@@ -76,8 +80,10 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   classMonitoringLastRun,
   onNotificationSettings,
   isNotificationSubscribed,
+  onTasksOpen,
 }) => {
   const { user, displayName: authDisplayName, signOut } = useAuth();
+  const { pendingCount } = useTasks();
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dateLabel = formatDateForDisplay(date);
   // Prefer the resolved display name from auth context (display_name → email);
@@ -204,6 +210,37 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 {classMonitoringLastRun ? `Last run: ${classMonitoringLastRun}` : "Fetch latest updates"}
               </p>
             </div>
+            <ChevronRight className="size-4 text-text-secondary shrink-0" aria-hidden />
+          </button>
+
+          <div className="mx-5 h-px bg-border-card" />
+
+          {/* Tasks row */}
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onTasksOpen();
+            }}
+            className="w-full flex items-center gap-4 px-5 py-4 text-left active:bg-background-primary transition-colors touch-manipulation"
+            aria-label="My tasks"
+          >
+            <ClipboardList className="size-4 text-text-secondary shrink-0" aria-hidden />
+            <div className="flex-1 min-w-0">
+              <p className="font-body text-sm text-text-primary leading-tight">
+                My Tasks
+              </p>
+              <p className="font-body text-xs text-text-secondary leading-tight mt-0.5">
+                {pendingCount > 0
+                  ? `${pendingCount} pending task${pendingCount !== 1 ? "s" : ""}`
+                  : "View assigned tasks"}
+              </p>
+            </div>
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-warm-orange-brown text-white text-[11px] font-bold shrink-0">
+                {pendingCount > 99 ? "99+" : pendingCount}
+              </span>
+            )}
             <ChevronRight className="size-4 text-text-secondary shrink-0" aria-hidden />
           </button>
 

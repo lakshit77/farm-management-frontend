@@ -3,12 +3,14 @@ import { Loader2, Menu } from "lucide-react";
 import { HeaderLabelContext } from "./contexts/HeaderLabelContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ChatProvider } from "./contexts/ChatContext";
+import { TaskProvider } from "./contexts/TaskContext";
 import { DashboardView } from "./views";
 import { CLASS_MONITOR_API, getApiHeaders } from "./api";
 import { DASHBOARD_REFRESH_EVENT } from "./constants";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { ConfirmSyncModal } from "./components/ConfirmSyncModal";
 import { DesktopSidebar } from "./components/DesktopSidebar";
+import { TasksPanel } from "./components/tasks/TasksPanel";
 import LoginPage from "./components/LoginPage";
 
 function getTodayStr(): string {
@@ -57,9 +59,11 @@ function AppInner(): React.ReactElement {
 function App(): React.ReactElement {
   return (
     <AuthProvider>
-      <ChatProvider>
-        <AppInner />
-      </ChatProvider>
+      <TaskProvider>
+        <ChatProvider>
+          <AppInner />
+        </ChatProvider>
+      </TaskProvider>
     </AuthProvider>
   );
 }
@@ -70,6 +74,7 @@ function AppShell(): React.ReactElement {
   const [classMonitorLoading, setClassMonitorLoading] = useState<boolean>(false);
   const [syncModalOpen, setSyncModalOpen] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [tasksOpen, setTasksOpen] = useState<boolean>(false);
   const isMobile = useIsMobile();
 
   const triggerDashboardRefresh = useCallback((): void => {
@@ -168,7 +173,15 @@ function AppShell(): React.ReactElement {
             classMonitoringLastRun={trimLastRunForDisplay(classMonitoringLastRun)}
             classMonitorLoading={classMonitorLoading}
             onSyncClick={() => setSyncModalOpen(true)}
+            onTasksOpen={() => setTasksOpen(true)}
           />
+        )}
+
+        {/* Desktop-only tasks panel overlay */}
+        {!isMobile && tasksOpen && (
+          <div className="fixed inset-0 z-[80] bg-background-primary flex flex-col">
+            <TasksPanel onClose={() => setTasksOpen(false)} />
+          </div>
         )}
 
         {/* Desktop-only sync confirm modal */}

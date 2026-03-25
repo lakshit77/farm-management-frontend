@@ -14,6 +14,7 @@ import { MobileChatView } from "../../views/MobileChatView";
 import { IosBanner } from "../notifications/IosBanner";
 import { SoftPermissionPrompt } from "../notifications/SoftPermissionPrompt";
 import { NotificationSettingsPanel } from "../notifications/NotificationSettingsPanel";
+import { TasksPanel } from "../tasks/TasksPanel";
 import { usePushNotifications } from "../../hooks/usePushNotifications";
 import { useAuth } from "../../contexts/AuthContext";
 import { HeaderLabelContext } from "../../contexts/HeaderLabelContext";
@@ -85,6 +86,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [conversationOpen, setConversationOpen] = useState(false);
   const [notifSettingsOpen, setNotifSettingsOpen] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
 
   // Consume classMonitoringLastRun from context (set by DashboardView)
   const { classMonitoringLastRun } = useContext(HeaderLabelContext);
@@ -132,6 +134,13 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         </div>
       )}
 
+      {/* Tasks full-screen panel */}
+      {tasksOpen && (
+        <div className="fixed inset-0 z-[80] bg-background-primary flex flex-col">
+          <TasksPanel onClose={() => setTasksOpen(false)} />
+        </div>
+      )}
+
       {/* Chat takes over the full screen — rendered as a fixed overlay outside the shell */}
       {activeTab === "chat" && (
         <div className="fixed inset-0 z-[60] bg-white flex flex-col">
@@ -164,6 +173,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         classMonitoringLastRun={trimLastRunForDisplay(classMonitoringLastRun)}
         onNotificationSettings={() => setNotifSettingsOpen(true)}
         isNotificationSubscribed={push.isSubscribed}
+        onTasksOpen={() => setTasksOpen(true)}
       />
 
       {/* Scrollable content area */}
