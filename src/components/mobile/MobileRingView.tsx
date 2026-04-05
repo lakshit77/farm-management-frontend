@@ -164,30 +164,50 @@ export const MobileRingView: React.FC<MobileRingViewProps> = ({
         {rings.map((ring, i) => {
           const isActive = i === selectedRingIdx;
           const count = ringEntries.get(ring.id)?.length ?? 0;
+          const ringNum = ring.ring_number ?? i + 1;
+          const titleLine = (ring.name ?? "").trim();
+          const hasVenueName = titleLine.length > 0;
+          const primaryLabel = hasVenueName ? titleLine : `Ring ${ringNum}`;
+          const countClass = isActive
+            ? "text-white/80"
+            : "text-text-secondary/70";
           return (
             <button
               key={ring.id}
               type="button"
+              title={hasVenueName ? titleLine : undefined}
+              aria-label={`${primaryLabel}, ring ${ringNum}, ${count} entr${count === 1 ? "y" : "ies"}`}
               onClick={() => setSelectedRingIdx(i)}
-              className={`shrink-0 px-3.5 py-2 rounded-full font-body text-xs font-medium transition-colors touch-manipulation ${
+              className={`shrink-0 max-w-[min(85vw,15rem)] px-3.5 py-2 rounded-2xl font-body text-xs font-medium transition-colors touch-manipulation text-left flex flex-col items-stretch gap-0.5 ${
                 isActive
                   ? "bg-accent-green text-white"
-                  : "bg-surface-card border border-border-card text-text-secondary active:bg-surface-card-alt"
+                  : "bg-surface-card border border-border-card text-text-primary active:bg-surface-card-alt"
               }`}
             >
-              Ring {ring.ring_number ?? i + 1}
-              <span className={`ml-1 ${isActive ? "text-white/80" : "text-text-secondary/70"}`}>
-                ({count})
-              </span>
+              {hasVenueName ? (
+                <>
+                  <span className="truncate leading-tight">{titleLine}</span>
+                  <span
+                    className={`text-[10px] font-normal leading-tight ${
+                      isActive ? "text-white/85" : "text-text-secondary"
+                    }`}
+                  >
+                    Ring {ringNum}
+                    <span className={countClass}> ({count})</span>
+                  </span>
+                </>
+              ) : (
+                <span className="leading-tight">
+                  Ring {ringNum}
+                  <span className={`ml-1 font-normal ${countClass}`}>
+                    ({count})
+                  </span>
+                </span>
+              )}
             </button>
           );
         })}
       </div>
-
-      {/* Ring name subtitle */}
-      <p className="font-body text-xs text-text-secondary px-0.5 truncate">
-        {activeRing.name}
-      </p>
 
       {/* Timeline cards */}
       {entries.length === 0 ? (
