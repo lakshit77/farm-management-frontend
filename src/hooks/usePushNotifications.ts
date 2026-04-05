@@ -7,6 +7,7 @@
  *   - Per-user preference management (all devices share preferences)
  *   - localStorage-based prompt state tracking (re-ask after 3 days)
  *   - iOS standalone mode detection
+ *   - Per-device subscribed state from POST /push/subscription/status (not localStorage)
  *
  * Usage:
  *   const push = usePushNotifications({ userId, farmId, accessToken });
@@ -15,6 +16,7 @@
  *   push.dismissPrompt();      // not now — re-ask in 3 days
  *   push.preferences           // current category toggle values
  *   push.updatePreferences({ results: false });  // update backend prefs
+ *   push.syncSubscriptionStatus(); // re-fetch device subscription from backend
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -24,7 +26,8 @@ import { API_BASE_URL } from "../api/api";
 
 const LS_DISMISSED_AT = "push_dismissed_at";
 const LS_BLOCKED = "push_blocked";
-const LS_SUBSCRIBED = "push_subscribed";
+/** @deprecated Removed from logic; stripped on successful sync for one-time cleanup. */
+const LS_SUBSCRIBED_LEGACY = "push_subscribed";
 const REDISMISS_DAYS = 3;
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -63,6 +66,8 @@ export interface PushNotificationsState {
   permissionState: PermissionState;
   /** True when this device has an active push subscription stored in the backend. */
   isSubscribed: boolean;
+  /** True while loading subscription status from the backend (PushManager + API). */
+  subscriptionSyncLoading: boolean;
   /** Derived prompt display logic state. */
   promptState: PromptState;
   /** True while subscribe/unsubscribe is in progress. */
@@ -83,6 +88,8 @@ export interface PushNotificationsState {
   updatePreferences: (partial: PartialPreferences) => Promise<void>;
   /** Fetch preferences from the backend (called automatically on mount). */
   refetchPreferences: () => Promise<void>;
+  /** Re-sync this device's push registration with push_subscriptions (browser endpoint + API). */
+  syncSubscriptionStatus: () => Promise<void>;
 }
 
 interface UsePushNotificationsOptions {
@@ -162,9 +169,8 @@ export function usePushNotifications({
   const [permissionState, setPermissionState] = useState<PermissionState>(
     () => (isSupported ? (Notification.permission as PermissionState) : "default")
   );
-  const [isSubscribed, setIsSubscribed] = useState<boolean>(
-    () => localStorage.getItem(LS_SUBSCRIBED) === "true"
-  );
+  const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
+  const [subscriptionSyncLoading, setSubscriptionSyncLoading] = useState(false);
   const [promptState, setPromptState] = useState<PromptState>(() =>
     derivePromptState(isSupported ? (Notification.permission as PermissionState) : "default")
   );
@@ -185,6 +191,71 @@ export function usePushNotifications({
     const token = accessTokenRef.current;
     return token ? { Authorization: `Bearer ${token}` } : {};
   }, []);
+
+  /** Incremented so in-flight syncs ignore stale results after auth/farm changes. */
+  const subscriptionSyncGenRef = useRef(0);
+
+  const syncSubscriptionStatus = useCallback(async (): Promise<void> => {
+    if (!isSupported || !userId || !farmId || !accessToken) {
+      setIsSubscribed(false);
+      return;
+    }
+    const gen = (subscriptionSyncGenRef.current += 1);
+    setSubscriptionSyncLoading(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      if (gen !== subscriptionSyncGenRef.current) return;
+      const sub = await registration.pushManager.getSubscription();
+      if (gen !== subscriptionSyncGenRef.current) return;
+      if (!sub) {
+        setIsSubscribed(false);
+        try {
+          localStorage.removeItem(LS_SUBSCRIBED_LEGACY);
+        } catch {
+          /* ignore quota / private mode */
+        }
+        return;
+      }
+
+      const resp = await fetch(`${API_BASE_URL}/api/v1/push/subscription/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify({ farm_id: farmId, endpoint: sub.endpoint }),
+      });
+      if (gen !== subscriptionSyncGenRef.current) return;
+      if (!resp.ok) {
+        console.error("[Push] subscription/status failed:", resp.status);
+        return;
+      }
+      const json: { data?: { is_active?: boolean } } = await resp.json();
+      if (gen !== subscriptionSyncGenRef.current) return;
+      setIsSubscribed(json.data?.is_active === true);
+      try {
+        localStorage.removeItem(LS_SUBSCRIBED_LEGACY);
+      } catch {
+        /* ignore */
+      }
+    } catch (err) {
+      if (gen !== subscriptionSyncGenRef.current) return;
+      console.error("[Push] syncSubscriptionStatus error:", err);
+    } finally {
+      if (gen === subscriptionSyncGenRef.current) {
+        setSubscriptionSyncLoading(false);
+      }
+    }
+  }, [isSupported, userId, farmId, accessToken, getAuthHeader]);
+
+  useEffect(() => {
+    if (!isSupported || !userId || !farmId || !accessToken) {
+      subscriptionSyncGenRef.current += 1;
+      setSubscriptionSyncLoading(false);
+      if (!userId || !farmId || !accessToken) {
+        setIsSubscribed(false);
+      }
+      return;
+    }
+    void syncSubscriptionStatus();
+  }, [isSupported, userId, farmId, accessToken, syncSubscriptionStatus]);
 
   // ── Fetch preferences ────────────────────────────────────────────────────────
 
@@ -266,7 +337,11 @@ export function usePushNotifications({
 
       if (!resp.ok) throw new Error(`Backend subscribe failed: ${resp.status}`);
 
-      localStorage.setItem(LS_SUBSCRIBED, "true");
+      try {
+        localStorage.removeItem(LS_SUBSCRIBED_LEGACY);
+      } catch {
+        /* ignore */
+      }
       localStorage.removeItem(LS_BLOCKED);
       setIsSubscribed(true);
       setPromptState("granted");
@@ -306,7 +381,11 @@ export function usePushNotifications({
         });
       }
 
-      localStorage.setItem(LS_SUBSCRIBED, "false");
+      try {
+        localStorage.removeItem(LS_SUBSCRIBED_LEGACY);
+      } catch {
+        /* ignore */
+      }
       setIsSubscribed(false);
       setPermissionState(Notification.permission as PermissionState);
       setPromptState(derivePromptState(Notification.permission as PermissionState));
@@ -363,6 +442,7 @@ export function usePushNotifications({
     isStandalone,
     permissionState,
     isSubscribed,
+    subscriptionSyncLoading,
     promptState,
     isLoading,
     error,
@@ -373,5 +453,6 @@ export function usePushNotifications({
     dismissPrompt,
     updatePreferences,
     refetchPreferences,
+    syncSubscriptionStatus,
   };
 }

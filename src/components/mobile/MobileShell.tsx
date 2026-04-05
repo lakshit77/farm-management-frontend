@@ -173,6 +173,7 @@ export const MobileShell: React.FC<MobileShellProps> = ({
         classMonitoringLastRun={trimLastRunForDisplay(classMonitoringLastRun)}
         onNotificationSettings={() => setNotifSettingsOpen(true)}
         isNotificationSubscribed={push.isSubscribed}
+        notificationSubscriptionSyncing={push.subscriptionSyncLoading}
         onTasksOpen={() => setTasksOpen(true)}
       />
 

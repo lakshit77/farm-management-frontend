@@ -59,6 +59,8 @@ interface MobileDrawerProps {
   onNotificationSettings: () => void;
   /** Whether push notifications are subscribed on this device. */
   isNotificationSubscribed: boolean;
+  /** True while push subscription state is being loaded from the server. */
+  notificationSubscriptionSyncing?: boolean;
   /** Opens the TasksPanel full-screen overlay. */
   onTasksOpen: () => void;
 }
@@ -80,6 +82,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   classMonitoringLastRun,
   onNotificationSettings,
   isNotificationSubscribed,
+  notificationSubscriptionSyncing = false,
   onTasksOpen,
 }) => {
   const { user, displayName: authDisplayName, signOut } = useAuth();
@@ -256,7 +259,12 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
             className="w-full flex items-center gap-4 px-5 py-4 text-left active:bg-background-primary transition-colors touch-manipulation"
             aria-label="Notification settings"
           >
-            {isNotificationSubscribed ? (
+            {notificationSubscriptionSyncing ? (
+              <Loader2
+                className="size-4 text-text-secondary shrink-0 animate-spin"
+                aria-hidden
+              />
+            ) : isNotificationSubscribed ? (
               <Bell className="size-4 text-text-secondary shrink-0" aria-hidden />
             ) : (
               <BellOff className="size-4 text-text-secondary shrink-0" aria-hidden />
@@ -266,7 +274,11 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
                 Notifications
               </p>
               <p className="font-body text-xs text-text-secondary leading-tight mt-0.5">
-                {isNotificationSubscribed ? "Subscribed on this device" : "Not subscribed"}
+                {notificationSubscriptionSyncing
+                  ? "Checking this device…"
+                  : isNotificationSubscribed
+                    ? "Subscribed on this device"
+                    : "Not subscribed"}
               </p>
             </div>
             <ChevronRight className="size-4 text-text-secondary shrink-0" aria-hidden />

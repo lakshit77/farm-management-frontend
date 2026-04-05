@@ -113,6 +113,7 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
     isStandalone,
     permissionState,
     isSubscribed,
+    subscriptionSyncLoading,
     isLoading,
     error,
     preferences,
@@ -134,7 +135,8 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
     void updatePreferences({ [key]: value } as PartialPreferences);
   }
 
-  const categoryDisabled = !isSubscribed || prefsLoading;
+  const categoryDisabled =
+    !isSubscribed || prefsLoading || subscriptionSyncLoading;
 
   // ── Not supported ──────────────────────────────────────────────────────────
   if (!isSupported) {
@@ -190,12 +192,23 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
                   <ExternalLink className="size-3" />
                 </a>
               </div>
+            ) : subscriptionSyncLoading ? (
+              <div className="flex items-center gap-3 py-3">
+                <span className="size-8 rounded-full bg-background-primary flex items-center justify-center shrink-0 text-text-secondary">
+                  <Loader2 className="size-4 animate-spin text-accent-green-dark" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-text-primary">Push notifications</p>
+                  <p className="text-xs text-text-secondary mt-0.5">Checking this device…</p>
+                </div>
+              </div>
             ) : (
               <ToggleRow
                 icon={<Bell className="size-4" />}
                 label="Push notifications"
                 description={isSubscribed ? "This device is subscribed" : "Off on this device"}
                 checked={isSubscribed}
+                disabled={isLoading}
                 onChange={handleMasterToggle}
               />
             )}
