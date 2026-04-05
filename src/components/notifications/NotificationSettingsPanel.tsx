@@ -42,7 +42,6 @@ interface ToggleRowProps {
   checked: boolean;
   disabled?: boolean;
   onChange: (value: boolean) => void;
-  urgent?: boolean;
 }
 
 const ToggleRow: React.FC<ToggleRowProps> = ({
@@ -52,7 +51,6 @@ const ToggleRow: React.FC<ToggleRowProps> = ({
   checked,
   disabled,
   onChange,
-  urgent,
 }) => (
   <div
     className={`flex items-center gap-3 py-3 ${disabled ? "opacity-40 pointer-events-none" : ""}`}
@@ -61,14 +59,7 @@ const ToggleRow: React.FC<ToggleRowProps> = ({
       {icon}
     </span>
     <div className="flex-1 min-w-0">
-      <div className="flex items-center gap-1.5">
-        <p className="text-sm font-medium text-text-primary truncate">{label}</p>
-        {urgent && (
-          <span className="text-[10px] font-semibold text-warm-orange-brown bg-warm-orange-brown/10 px-1.5 py-0.5 rounded-full shrink-0">
-            stays on screen
-          </span>
-        )}
-      </div>
+      <p className="text-sm font-medium text-text-primary truncate">{label}</p>
       {description && (
         <p className="text-xs text-text-secondary mt-0.5 truncate">{description}</p>
       )}
@@ -278,7 +269,6 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
               checked={preferences?.results ?? true}
               disabled={categoryDisabled}
               onChange={(v) => handlePrefToggle("results", v)}
-              urgent
             />
             <ToggleRow
               icon={<CheckCircle className="size-4" />}
@@ -287,7 +277,6 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
               checked={preferences?.horse_completed ?? true}
               disabled={categoryDisabled}
               onChange={(v) => handlePrefToggle("horse_completed", v)}
-              urgent
             />
             <ToggleRow
               icon={<AlertTriangle className="size-4" />}
@@ -296,7 +285,6 @@ export const NotificationSettingsPanel: React.FC<NotificationSettingsPanelProps>
               checked={preferences?.scratched ?? true}
               disabled={categoryDisabled}
               onChange={(v) => handlePrefToggle("scratched", v)}
-              urgent
             />
             <ToggleRow
               icon={<BarChart2 className="size-4" />}

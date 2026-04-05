@@ -12,7 +12,6 @@
  *   body: string,
  *   url: string,        // deep-link URL to open on tap
  *   tag?: string,       // groups same-type notifications (replaces previous)
- *   urgent?: boolean,   // true → requireInteraction (stays on screen)
  * }
  */
 
@@ -72,7 +71,6 @@ self.addEventListener("push", (event: PushEvent) => {
     body?: string;
     url?: string;
     tag?: string;
-    urgent?: boolean;
   } = {};
 
   try {
@@ -88,7 +86,7 @@ self.addEventListener("push", (event: PushEvent) => {
     badge: "/pwa-192x192.png",
     data: { url: data.url ?? "/" },
     tag: data.tag,
-    requireInteraction: data.urgent ?? false,
+    requireInteraction: false,
     vibrate: [200, 100, 200],
   } as NotificationOptions;
 
