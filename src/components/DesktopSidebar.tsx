@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Activity, ClipboardList, LogOut, X, Loader2 } from "lucide-react";
+import { Activity, ClipboardList, LogOut, Users, X, Loader2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useTasks } from "../contexts/TaskContext";
 
@@ -16,6 +16,8 @@ interface DesktopSidebarProps {
   onSyncClick: () => void;
   /** Handler to open the Tasks full-screen panel. */
   onTasksOpen: () => void;
+  /** Handler to open the Show Entries full-screen panel. */
+  onShowEntriesOpen: () => void;
 }
 
 /**
@@ -35,6 +37,7 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
   classMonitorLoading,
   onSyncClick,
   onTasksOpen,
+  onShowEntriesOpen,
 }) => {
   const { user, displayName, signOut } = useAuth();
   const { pendingCount } = useTasks();
@@ -169,6 +172,28 @@ export const DesktopSidebar: React.FC<DesktopSidebarProps> = ({
               </p>
             )}
           </section>
+          {/* Show Entries section */}
+          <section aria-labelledby="sidebar-entries-heading">
+            <p
+              id="sidebar-entries-heading"
+              className="font-body text-[10px] font-semibold uppercase tracking-wider text-text-secondary mb-2"
+            >
+              Show Entries
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onShowEntriesOpen();
+              }}
+              className="w-full inline-flex items-center gap-2 h-9 font-body text-sm font-medium text-text-primary bg-surface-card border border-border-card hover:bg-background-primary rounded-lg px-3.5 focus:outline-none focus:ring-2 focus:ring-accent-green focus:ring-offset-2 transition-colors"
+              aria-label="Open Show Entries panel"
+            >
+              <Users className="size-3.5 shrink-0 text-text-secondary" aria-hidden />
+              <span>Show Entries</span>
+            </button>
+          </section>
+
           {/* Tasks section */}
           <section aria-labelledby="sidebar-tasks-heading">
             <p

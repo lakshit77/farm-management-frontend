@@ -19,7 +19,7 @@ import {
   type Environment,
 } from '../config';
 
-import type { ScheduleViewResponse, NotificationLogResponse } from './types';
+import type { ScheduleViewResponse, NotificationLogResponse, AllEntriesResponse } from './types';
 
 export type {
   ScheduleViewResponse,
@@ -30,6 +30,9 @@ export type {
   NotificationLogResponse,
   NotificationLogListData,
   NotificationLogItem,
+  AllEntriesResponse,
+  AllEntriesListData,
+  AllEntryItem,
 } from './types';
 export type { Environment };
 export { CURRENT_ENVIRONMENT, USE_MOCK_DATA };
@@ -483,4 +486,90 @@ export const NOTIFICATIONS_API = {
       ],
     },
   } satisfies NotificationLogResponse,
+} as const;
+
+// =============================================================================
+// All Show Entries API
+// =============================================================================
+
+/** Query params for GET /api/v1/entries/all. */
+export type AllEntriesParams = {
+  show_id?: string;
+  horse_name?: string;
+  rider_name?: string;
+  trainer_name?: string;
+  owner_name?: string;
+  is_own?: boolean;
+  is_selected?: boolean;
+  page?: number;
+  page_size?: number;
+};
+
+/**
+ * All Show Entries API.
+ *
+ * Endpoint: GET /api/v1/entries/all
+ *
+ * Returns paginated list of all entries for a show with search and filters.
+ */
+export const ALL_ENTRIES_API = {
+  url: (params: AllEntriesParams = {}): string => {
+    const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    const search = new URLSearchParams();
+    if (params.show_id) search.set('show_id', params.show_id);
+    if (params.horse_name) search.set('horse_name', params.horse_name);
+    if (params.rider_name) search.set('rider_name', params.rider_name);
+    if (params.trainer_name) search.set('trainer_name', params.trainer_name);
+    if (params.owner_name) search.set('owner_name', params.owner_name);
+    if (params.is_own != null) search.set('is_own', String(params.is_own));
+    if (params.is_selected != null) search.set('is_selected', String(params.is_selected));
+    if (params.page != null) search.set('page', String(params.page));
+    if (params.page_size != null) search.set('page_size', String(params.page_size));
+    const qs = search.toString();
+    return `${base}/api/v1/entries/all${qs ? `?${qs}` : ''}`;
+  },
+  method: 'GET' as const,
+  useMockData: USE_MOCK_DATA,
+  mockResponse: {
+    status: 1 as const,
+    message: 'success',
+    data: {
+      entries: [],
+      total_count: 0,
+      page: 1,
+      page_size: 50,
+      show_id: null,
+      show_name: null,
+    },
+  } satisfies AllEntriesResponse,
+} as const;
+
+/**
+ * Toggle Entry Selection API.
+ *
+ * Endpoint: PATCH /api/v1/entries/{entryId}/select?selected={boolean}
+ *
+ * Selects or unselects an entry for monitoring.
+ */
+export const TOGGLE_ENTRY_API = {
+  url: (entryId: string, selected: boolean): string => {
+    const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    return `${base}/api/v1/entries/${encodeURIComponent(entryId)}/select?selected=${selected}`;
+  },
+  method: 'PATCH' as const,
+} as const;
+
+/**
+ * Sync All Entries API.
+ *
+ * Endpoint: POST /api/v1/entries/sync-all
+ *
+ * Triggers the all-show-entries sync from Wellington API.
+ */
+export const SYNC_ALL_ENTRIES_API = {
+  url: (): string => {
+    const base = API_BASE_URL.endsWith('/') ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+    return `${base}/api/v1/entries/sync-all`;
+  },
+  method: 'POST' as const,
 } as const;

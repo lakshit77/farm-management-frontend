@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Loader2,
   LogOut,
+  Users,
   X,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
@@ -63,6 +64,8 @@ interface MobileDrawerProps {
   notificationSubscriptionSyncing?: boolean;
   /** Opens the TasksPanel full-screen overlay. */
   onTasksOpen: () => void;
+  /** Opens the ShowEntriesView full-screen overlay. */
+  onShowEntriesOpen: () => void;
 }
 
 /**
@@ -84,6 +87,7 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
   isNotificationSubscribed,
   notificationSubscriptionSyncing = false,
   onTasksOpen,
+  onShowEntriesOpen,
 }) => {
   const { user, displayName: authDisplayName, signOut } = useAuth();
   const { pendingCount } = useTasks();
@@ -211,6 +215,30 @@ export const MobileDrawer: React.FC<MobileDrawerProps> = ({
               </p>
               <p className="font-body text-xs text-text-secondary leading-tight mt-0.5">
                 {classMonitoringLastRun ? `Last run: ${classMonitoringLastRun}` : "Fetch latest updates"}
+              </p>
+            </div>
+            <ChevronRight className="size-4 text-text-secondary shrink-0" aria-hidden />
+          </button>
+
+          <div className="mx-5 h-px bg-border-card" />
+
+          {/* Show Entries row */}
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onShowEntriesOpen();
+            }}
+            className="w-full flex items-center gap-4 px-5 py-4 text-left active:bg-background-primary transition-colors touch-manipulation"
+            aria-label="Show entries"
+          >
+            <Users className="size-4 text-text-secondary shrink-0" aria-hidden />
+            <div className="flex-1 min-w-0">
+              <p className="font-body text-sm text-text-primary leading-tight">
+                Show Entries
+              </p>
+              <p className="font-body text-xs text-text-secondary leading-tight mt-0.5">
+                View and manage all entries
               </p>
             </div>
             <ChevronRight className="size-4 text-text-secondary shrink-0" aria-hidden />

@@ -101,3 +101,39 @@ export type NotificationLogResponse = {
   message: string;
   data: NotificationLogListData;
 };
+
+// =============================================================================
+// All Show Entries API
+// =============================================================================
+
+/** Single entry in the all-show-entries list. */
+export type AllEntryItem = {
+  id: string;
+  horse_name: string;
+  horse_id: string;
+  back_number: string | null;
+  rider_list: string | null;
+  trainer_name: string | null;
+  owner_name: string | null;
+  is_own_entry: boolean;
+  is_selected: boolean;
+  status: string;
+  api_entry_id: number | null;
+};
+
+/** Inner payload for the all-entries list response. */
+export type AllEntriesListData = {
+  entries: AllEntryItem[];
+  total_count: number;
+  page: number;
+  page_size: number;
+  show_id: string | null;
+  show_name: string | null;
+};
+
+/** Response shape for GET /api/v1/entries/all. */
+export type AllEntriesResponse = {
+  status: 1 | 0;
+  message: string;
+  data: AllEntriesListData;
+};

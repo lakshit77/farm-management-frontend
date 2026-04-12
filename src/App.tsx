@@ -4,7 +4,7 @@ import { HeaderLabelContext } from "./contexts/HeaderLabelContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ChatProvider } from "./contexts/ChatContext";
 import { TaskProvider } from "./contexts/TaskContext";
-import { DashboardView } from "./views";
+import { DashboardView, ShowEntriesView } from "./views";
 import { CLASS_MONITOR_API, getApiHeaders } from "./api";
 import { DASHBOARD_REFRESH_EVENT } from "./constants";
 import { useIsMobile } from "./hooks/useIsMobile";
@@ -75,6 +75,7 @@ function AppShell(): React.ReactElement {
   const [syncModalOpen, setSyncModalOpen] = useState<boolean>(false);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [tasksOpen, setTasksOpen] = useState<boolean>(false);
+  const [showEntriesOpen, setShowEntriesOpen] = useState<boolean>(false);
   const isMobile = useIsMobile();
 
   const triggerDashboardRefresh = useCallback((): void => {
@@ -174,6 +175,7 @@ function AppShell(): React.ReactElement {
             classMonitorLoading={classMonitorLoading}
             onSyncClick={() => setSyncModalOpen(true)}
             onTasksOpen={() => setTasksOpen(true)}
+            onShowEntriesOpen={() => setShowEntriesOpen(true)}
           />
         )}
 
@@ -181,6 +183,13 @@ function AppShell(): React.ReactElement {
         {!isMobile && tasksOpen && (
           <div className="fixed inset-0 z-[80] bg-background-primary flex flex-col">
             <TasksPanel onClose={() => setTasksOpen(false)} />
+          </div>
+        )}
+
+        {/* Desktop-only show entries panel overlay */}
+        {!isMobile && showEntriesOpen && (
+          <div className="fixed inset-0 z-[80] bg-background-primary flex flex-col">
+            <ShowEntriesView onClose={() => setShowEntriesOpen(false)} />
           </div>
         )}
 
