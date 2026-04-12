@@ -9,7 +9,7 @@
 export type Environment = 'production' | 'uat';
 
 /** Current active environment. Change this to switch the API base URL for all endpoints. */
-export const CURRENT_ENVIRONMENT: Environment = 'production';
+export const CURRENT_ENVIRONMENT: Environment = 'uat';
 
 /**
  * API base URLs per environment.

@@ -1,0 +1,35 @@
+/* Styles appended when generating MOBILE_APP_FEATURES_CLIENT_DOC.pdf via md-to-pdf */
+
+table {
+  border-collapse: collapse;
+}
+
+/* Inner feature tables only (avoid double borders on outer layout table) */
+table table th,
+table table td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  vertical-align: top;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  line-height: 1.45;
+  color: #111;
+}
+
+h1 {
+  font-size: 22px;
+}
+
+h2 {
+  font-size: 16px;
+  margin-top: 1.2em;
+  page-break-after: avoid;
+}

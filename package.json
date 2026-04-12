@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docs:client-pdf": "cd docs && npx --yes md-to-pdf MOBILE_APP_FEATURES_CLIENT_DOC.md --config-file md-to-pdf.config.cjs"
   },
   "dependencies": {
     "@emoji-mart/data": "^1.2.1",
